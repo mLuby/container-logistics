@@ -3,19 +3,14 @@
   <head>
     <meta name="viewport" charset="utf-8" content="initial-scale=1,maximum-scale=1,user-scalable=no"/>
     <title>React Logistics</title>
-    <script src="../node_modules/jquery/dist/jquery.min.js"></script>
-    <script src="../lib/mapbox.js"></script>
-    <link href="../lib/mapbox.css" rel="stylesheet"/>
-    <link href="../src/app.css" rel="stylesheet" />
-    <script type='text/javascript' src='http://d3js.org/d3.v3.min.js'></script>
-    <script type='text/javascript' src='http://d3js.org/topojson.v1.min.js'></script>
-    <script type='text/javascript' src='planetaryjs.min.js'></script>
+    <link href="../lib/webglearth.css" rel="stylesheet" />
+    <script src="http://www.webglearth.com/v2/api.js"></script>
   </head>
   <body>
-    <canvas id='rotatingGlobe' width='400' height='400' style='width: 400px; height: 400px; cursor: move;'></canvas>
-    <script src="rotatingGlobe.js"></script>
-    <div id="map" class="map"></div>
-    <h1>10 hours driving</h1>
-    <script src="bundle.js"></script>
+    <!-- WebGL Earth -->
+    <div id="earth1" class="earth1"><div class="cross"></div></div>
+    <div id="earth2" class="earth2"><div class="cross"></div></div>
+    <script src="../src/webglearth.js"></script>
+    <!-- <script src="bundle.js"></script> -->
   </body>
 </html>
