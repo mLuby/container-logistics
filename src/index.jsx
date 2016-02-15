@@ -7,13 +7,13 @@ const nodesList = []
 const nodesObj = {}
 const edgesList = []
 
+// helpers
 function fst (list) { return list[0] }
 function loadLocalCSV (relativeFilePath) { return axios.get(relativeFilePath) }
 function mergeObjs (objList) {
   return Object.assign.apply(0, objList)
 }
 function prop (key) { return obj => obj[key] }
-function respToData (response) { return prop("data")(response) }
 function tryNum (maybeNum) { return isNaN(Number(maybeNum)) ? maybeNum : Number(maybeNum) }
 function trim (str) { return str.trim() }
 function csvToJson (csv) {
@@ -26,6 +26,10 @@ function csvToJson (csv) {
     .map((value, index) => ({[keys[index]]: tryNum(value)})))
   .map(mergeObjs)
 }
+function pushTo (list) { return item => { list.push(item); return item } }
+function notInList (list) { return item => !list.includes(item) }
+
+// business logic
 function addNodesToMap (nodes, color = "default") {
   nodes.forEach(node => map.addMarkerToMap(node, color, nodeClickHandler))
   return nodes
@@ -70,20 +74,16 @@ function createGraph (edges) {
   nodesList.forEach(addEdgesToNode(edges))
   return nodesList
 }
-function pushTo (list) { return item => { list.push(item); return item } }
-function notInList (list) { return item => !list.includes(item) }
 function inRange (targetNode, time, node = targetNode, nodes = [], edges = []) {
   function edgeWithinTravelTime (edge) { return edge.travel_time_in_hours_between_nodes <= time }
   function nodeTimeFromEdge (edge) { return {time: edge.travel_time_in_hours_between_nodes, node: edge.first_node_id === node.id ? nodesObj[edge.second_node_id] : nodesObj[edge.first_node_id]} }
   function notTarget (nodeTime) { return nodeTime.node !== targetNode }
-  // given some nodes
-  // find node's neighbors within travel time
-  // dedup neighbors against nodes (consider Map)
+  // find edges within travel time and dedup (consider Map)
   const validEdges = node.edges
   .filter(edgeWithinTravelTime)
   .filter(notInList(edges))
   .map(pushTo(edges))
-
+  // find nodes within travel time from valid edges and dedup (consider Map)
   const nodeTimes = validEdges
   .map(nodeTimeFromEdge)
   .filter(notInList(nodes))
@@ -112,6 +112,6 @@ function nodeClickHandler (event) {
   addEdgesToMap(edges, "red")
 }
 // load CSVs
-const nodesPromise = loadLocalCSV("../data/nodes.csv").then(compose(addNodesToListAndObj, addNodesToMap, csvToJson, respToData))
-const edgesPromise = loadLocalCSV("../data/edges.csv").then(compose(csvToJson, respToData))
+const nodesPromise = loadLocalCSV("../data/nodes.csv").then(compose(addNodesToListAndObj, addNodesToMap, csvToJson, prop("data")))
+const edgesPromise = loadLocalCSV("../data/edges.csv").then(compose(csvToJson, prop("data")))
 axios.all([edgesPromise, nodesPromise]).then(compose(createGraph, addEdgesToMap, addEdgesToList, fst))

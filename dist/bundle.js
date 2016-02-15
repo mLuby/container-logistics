@@ -54,7 +54,7 @@
 /******/ 	
 /******/ 	
 /******/ 	var hotApplyOnUpdate = true;
-/******/ 	var hotCurrentHash = "8b624f582ee0f9e7a2e9"; // eslint-disable-line no-unused-vars
+/******/ 	var hotCurrentHash = "71197c16e563669a0224"; // eslint-disable-line no-unused-vars
 /******/ 	var hotCurrentModuleData = {};
 /******/ 	var hotCurrentParents = []; // eslint-disable-line no-unused-vars
 /******/ 	
@@ -8060,6 +8060,7 @@
 	var nodesObj = {};
 	var edgesList = [];
 
+	// helpers
 	function fst(list) {
 	  return list[0];
 	}
@@ -8073,9 +8074,6 @@
 	  return function (obj) {
 	    return obj[key];
 	  };
-	}
-	function respToData(response) {
-	  return prop("data")(response);
 	}
 	function tryNum(maybeNum) {
 	  return isNaN(Number(maybeNum)) ? maybeNum : Number(maybeNum);
@@ -8092,6 +8090,18 @@
 	    });
 	  }).map(mergeObjs);
 	}
+	function pushTo(list) {
+	  return function (item) {
+	    list.push(item);return item;
+	  };
+	}
+	function notInList(list) {
+	  return function (item) {
+	    return !list.includes(item);
+	  };
+	}
+
+	// business logic
 	function addNodesToMap(nodes) {
 	  var color = arguments.length <= 1 || arguments[1] === undefined ? "default" : arguments[1];
 
@@ -8150,16 +8160,6 @@
 	  nodesList.forEach(addEdgesToNode(edges));
 	  return nodesList;
 	}
-	function pushTo(list) {
-	  return function (item) {
-	    list.push(item);return item;
-	  };
-	}
-	function notInList(list) {
-	  return function (item) {
-	    return !list.includes(item);
-	  };
-	}
 	function inRange(targetNode, time) {
 	  var node = arguments.length <= 2 || arguments[2] === undefined ? targetNode : arguments[2];
 	  var nodes = arguments.length <= 3 || arguments[3] === undefined ? [] : arguments[3];
@@ -8174,11 +8174,9 @@
 	  function notTarget(nodeTime) {
 	    return nodeTime.node !== targetNode;
 	  }
-	  // given some nodes
-	  // find node's neighbors within travel time
-	  // dedup neighbors against nodes (consider Map)
+	  // find edges within travel time and dedup (consider Map)
 	  var validEdges = node.edges.filter(edgeWithinTravelTime).filter(notInList(edges)).map(pushTo(edges));
-
+	  // find nodes within travel time from valid edges and dedup (consider Map)
 	  var nodeTimes = validEdges.map(nodeTimeFromEdge).filter(notInList(nodes)).filter(notTarget);
 	  // push unique neighbors to nodes
 	  nodeTimes.map(prop("node")).forEach(pushTo(nodes));
@@ -8212,8 +8210,8 @@
 	  addEdgesToMap(edges, "red");
 	}
 	// load CSVs
-	var nodesPromise = loadLocalCSV("../data/nodes.csv").then((0, _redux.compose)(addNodesToListAndObj, addNodesToMap, csvToJson, respToData));
-	var edgesPromise = loadLocalCSV("../data/edges.csv").then((0, _redux.compose)(csvToJson, respToData));
+	var nodesPromise = loadLocalCSV("../data/nodes.csv").then((0, _redux.compose)(addNodesToListAndObj, addNodesToMap, csvToJson, prop("data")));
+	var edgesPromise = loadLocalCSV("../data/edges.csv").then((0, _redux.compose)(csvToJson, prop("data")));
 	_axios2.default.all([edgesPromise, nodesPromise]).then((0, _redux.compose)(createGraph, addEdgesToMap, addEdgesToList, fst));
 
 	/* REACT HOT LOADER */ }).call(this); } finally { if (true) { (function () { var foundReactClasses = module.hot.data && module.hot.data.foundReactClasses || false; if (module.exports && module.makeHot) { var makeExportsHot = __webpack_require__(271); if (makeExportsHot(module, __webpack_require__(139))) { foundReactClasses = true; } var shouldAcceptModule = true && foundReactClasses; if (shouldAcceptModule) { module.hot.accept(function (err) { if (err) { console.error("Cannot not apply hot update to " + "index.jsx" + ": " + err.message); } }); } } module.hot.dispose(function (data) { data.makeHot = module.makeHot; data.foundReactClasses = foundReactClasses; }); })(); } }

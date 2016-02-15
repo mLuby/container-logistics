@@ -2,7 +2,7 @@ todos:
 - [ ] visualize graph of cities on web page as a map (Task 1)
 - [ ] calculate cities that can supply containers in time
 - [ ] enhancement: temp at each city (or other api use)
-- [ ] enhancement: traffic along each route
+- [ ] enhancement: calc minimum time to add N containers to site
 - [ ] enhancement: 3D map
 - [ ] enhancement: balance containers among cities
 - [ ] remove clearmetal notice and todos
