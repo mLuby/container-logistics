@@ -1,0 +1,10 @@
+body {
+  margin: 0;
+  padding: 0;
+}
+
+.map {
+  margin-top: 25;
+  bottom: 0;
+  height: 700px;
+}
