@@ -54,7 +54,7 @@
 /******/ 	
 /******/ 	
 /******/ 	var hotApplyOnUpdate = true;
-/******/ 	var hotCurrentHash = "1d988b0a5dfccf4378a2"; // eslint-disable-line no-unused-vars
+/******/ 	var hotCurrentHash = "8b624f582ee0f9e7a2e9"; // eslint-disable-line no-unused-vars
 /******/ 	var hotCurrentModuleData = {};
 /******/ 	var hotCurrentParents = []; // eslint-disable-line no-unused-vars
 /******/ 	
@@ -8039,6 +8039,8 @@
 
 	"use strict";
 
+	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
 	var _redux = __webpack_require__(243);
 
 	var _axios = __webpack_require__(253);
@@ -8060,9 +8062,6 @@
 
 	function fst(list) {
 	  return list[0];
-	}
-	function snd(list) {
-	  return list[1];
 	}
 	function loadLocalCSV(relativeFilePath) {
 	  return _axios2.default.get(relativeFilePath);
@@ -8094,8 +8093,10 @@
 	  }).map(mergeObjs);
 	}
 	function addNodesToMap(nodes) {
+	  var color = arguments.length <= 1 || arguments[1] === undefined ? "default" : arguments[1];
+
 	  nodes.forEach(function (node) {
-	    return map.addMarkerToMap(node, node.color || "default", nodeClickHandler);
+	    return map.addMarkerToMap(node, color, nodeClickHandler);
 	  });
 	  return nodes;
 	}
@@ -8115,7 +8116,8 @@
 	  return edges;
 	}
 	function addEdgesToMap(edges) {
-	  var color = "grey";
+	  var color = arguments.length <= 1 || arguments[1] === undefined ? "grey" : arguments[1];
+
 	  edges.forEach(function (edge) {
 	    var node1 = nodesObj[edge.first_node_id];
 	    var node2 = nodesObj[edge.second_node_id];
@@ -8148,10 +8150,20 @@
 	  nodesList.forEach(addEdgesToNode(edges));
 	  return nodesList;
 	}
-	var city = prop("city_name");
-	function nodesInRange(targetNode, time) {
+	function pushTo(list) {
+	  return function (item) {
+	    list.push(item);return item;
+	  };
+	}
+	function notInList(list) {
+	  return function (item) {
+	    return !list.includes(item);
+	  };
+	}
+	function inRange(targetNode, time) {
 	  var node = arguments.length <= 2 || arguments[2] === undefined ? targetNode : arguments[2];
 	  var nodes = arguments.length <= 3 || arguments[3] === undefined ? [] : arguments[3];
+	  var edges = arguments.length <= 4 || arguments[4] === undefined ? [] : arguments[4];
 
 	  function edgeWithinTravelTime(edge) {
 	    return edge.travel_time_in_hours_between_nodes <= time;
@@ -8159,51 +8171,47 @@
 	  function nodeTimeFromEdge(edge) {
 	    return { time: edge.travel_time_in_hours_between_nodes, node: edge.first_node_id === node.id ? nodesObj[edge.second_node_id] : nodesObj[edge.first_node_id] };
 	  }
-	  function notInNodes(nodeTime) {
-	    return !nodes.includes(nodeTime.node);
-	  }
 	  function notTarget(nodeTime) {
 	    return nodeTime.node !== targetNode;
-	  }
-	  function pushToNodes(theNode) {
-	    nodes.push(theNode);
-	  }
-	  function toNode(nodeTime) {
-	    return nodeTime.node;
 	  }
 	  // given some nodes
 	  // find node's neighbors within travel time
 	  // dedup neighbors against nodes (consider Map)
-	  var neighbors = node.edges.filter(edgeWithinTravelTime).map(nodeTimeFromEdge).filter(notInNodes).filter(notTarget);
+	  var validEdges = node.edges.filter(edgeWithinTravelTime).filter(notInList(edges)).map(pushTo(edges));
+
+	  var nodeTimes = validEdges.map(nodeTimeFromEdge).filter(notInList(nodes)).filter(notTarget);
 	  // push unique neighbors to nodes
-	  neighbors.map(toNode).forEach(pushToNodes);
+	  nodeTimes.map(prop("node")).forEach(pushTo(nodes));
 	  // recurse into unique neighbors with new time and nodes
-	  neighbors.forEach(function (nodeTime) {
-	    return nodesInRange(targetNode, time - nodeTime.time, nodeTime.node, nodes);
+	  nodeTimes.forEach(function (nodeTime) {
+	    return inRange(targetNode, time - nodeTime.time, nodeTime.node, nodes, edges);
 	  });
-	  // debugger
-	  return nodes;
+	  return [nodes, edges];
 	}
-	function markNodes(nodes, color) {
-	  nodes.forEach(function (node) {
-	    return map.addMarkerToMap(node, color, nodeClickHandler);
-	  });
-	}
-	// function markEdges (nodePairs, color) { nodePairs.forEach(nodePair => map.addEdgeToMap(fst(nodePair), snd(nodePair), color)) }
 	function nodeClickHandler(event) {
 	  function hasLatLng(node) {
 	    return node.latitude === event.latlng.lat && node.longitude === event.latlng.lng;
 	  }
 	  var targetNode = fst(nodesList.filter(hasLatLng));
-	  var time = 15;
-	  var nodes = nodesInRange(targetNode, time);
-	  console.log('node', targetNode, 'time', time);
-	  console.log('nodesInRange 10', nodes.map(city));
-	  console.log('countContainers', countContainers(nodes));
+	  var time = 10;
+
+	  var _inRange = inRange(targetNode, time);
+
+	  var _inRange2 = _slicedToArray(_inRange, 2);
+
+	  var nodes = _inRange2[0];
+	  var edges = _inRange2[1];
+	  // console.log('node', targetNode, 'time', time)
+	  // console.log('inRange nodes', nodes.map(prop("city_name")))
+	  // console.log('inRange edges', edges)
+	  // console.log('countContainers', countContainers(nodes))
+
 	  clearMap();
-	  markNodes([targetNode], "green");
-	  markNodes(nodes, "red");
+	  addNodesToMap([targetNode], "green");
+	  addNodesToMap(nodes, "red");
+	  addEdgesToMap(edges, "red");
 	}
+	// load CSVs
 	var nodesPromise = loadLocalCSV("../data/nodes.csv").then((0, _redux.compose)(addNodesToListAndObj, addNodesToMap, csvToJson, respToData));
 	var edgesPromise = loadLocalCSV("../data/edges.csv").then((0, _redux.compose)(csvToJson, respToData));
 	_axios2.default.all([edgesPromise, nodesPromise]).then((0, _redux.compose)(createGraph, addEdgesToMap, addEdgesToList, fst));
