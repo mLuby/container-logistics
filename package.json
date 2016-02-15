@@ -4,7 +4,8 @@
   "description": "logistics",
   "main": "index.js",
   "scripts": {
-    "start": "open http://0.0.0.0:8080/dist & webpack --watch & webpack-dev-server --watch"
+    "start": "open http://0.0.0.0:8080/dist & webpack --watch & webpack-dev-server --watch",
+    "clean": "rm -rf ./dist/*.hot-update.js*"
   },
   "author": "Mike Luby <Michael@mLuby.com> (https://github.com/mLuby)",
   "license": "ISC",

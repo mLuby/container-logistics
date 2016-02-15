@@ -54,7 +54,7 @@
 /******/ 	
 /******/ 	
 /******/ 	var hotApplyOnUpdate = true;
-/******/ 	var hotCurrentHash = "71197c16e563669a0224"; // eslint-disable-line no-unused-vars
+/******/ 	var hotCurrentHash = "f9360fab18d8669329b3"; // eslint-disable-line no-unused-vars
 /******/ 	var hotCurrentModuleData = {};
 /******/ 	var hotCurrentParents = []; // eslint-disable-line no-unused-vars
 /******/ 	
@@ -8047,15 +8047,25 @@
 
 	var _axios2 = _interopRequireDefault(_axios);
 
-	var _mapFunctions = __webpack_require__(270);
+	var _mapFunctions = __webpack_require__(275);
 
 	var _mapFunctions2 = _interopRequireDefault(_mapFunctions);
+
+	var _webglearth = __webpack_require__(274);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
-	var map = new _mapFunctions2.default("map");
+	var mapBoxMap = new _mapFunctions2.default("map");
+
+	var _createEarths = (0, _webglearth.createEarths)();
+
+	var _createEarths2 = _slicedToArray(_createEarths, 2);
+
+	var earth1 = _createEarths2[0];
+	var earth2 = _createEarths2[1];
+
 	var nodesList = [];
 	var nodesObj = {};
 	var edgesList = [];
@@ -8106,7 +8116,7 @@
 	  var color = arguments.length <= 1 || arguments[1] === undefined ? "default" : arguments[1];
 
 	  nodes.forEach(function (node) {
-	    return map.addMarkerToMap(node, color, nodeClickHandler);
+	    return mapBoxMap.addMarkerToMap(node, color, nodeClickHandler);
 	  });
 	  return nodes;
 	}
@@ -8131,13 +8141,13 @@
 	  edges.forEach(function (edge) {
 	    var node1 = nodesObj[edge.first_node_id];
 	    var node2 = nodesObj[edge.second_node_id];
-	    map.addEdgeToMap(node1, node2, color);
+	    mapBoxMap.addEdgeToMap(node1, node2, color);
 	  });
 	  return edges;
 	}
 	function clearMap() {
-	  map.clearMarkers();
-	  map.clearEdges();
+	  mapBoxMap.clearMarkers();
+	  mapBoxMap.clearEdges();
 	  addNodesToMap(nodesList);
 	  addEdgesToMap(edgesList);
 	}
@@ -29939,7 +29949,226 @@
 
 
 /***/ },
-/* 270 */
+/* 270 */,
+/* 271 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var isReactClassish = __webpack_require__(272),
+	    isReactElementish = __webpack_require__(273);
+
+	function makeExportsHot(m, React) {
+	  if (isReactElementish(m.exports, React)) {
+	    // React elements are never valid React classes
+	    return false;
+	  }
+
+	  var freshExports = m.exports,
+	      exportsReactClass = isReactClassish(m.exports, React),
+	      foundReactClasses = false;
+
+	  if (exportsReactClass) {
+	    m.exports = m.makeHot(m.exports, '__MODULE_EXPORTS');
+	    foundReactClasses = true;
+	  }
+
+	  for (var key in m.exports) {
+	    if (!Object.prototype.hasOwnProperty.call(freshExports, key)) {
+	      continue;
+	    }
+
+	    if (exportsReactClass && key === 'type') {
+	      // React 0.12 also puts classes under `type` property for compat.
+	      // Skip to avoid updating twice.
+	      continue;
+	    }
+
+	    var value;
+	    try {
+	      value = freshExports[key];
+	    } catch (err) {
+	      continue;
+	    }
+
+	    if (!isReactClassish(value, React)) {
+	      continue;
+	    }
+
+	    if (Object.getOwnPropertyDescriptor(m.exports, key).writable) {
+	      m.exports[key] = m.makeHot(value, '__MODULE_EXPORTS_' + key);
+	      foundReactClasses = true;
+	    } else {
+	      console.warn("Can't make class " + key + " hot reloadable due to being read-only. To fix this you can try two solutions. First, you can exclude files or directories (for example, /node_modules/) using 'exclude' option in loader configuration. Second, if you are using Babel, you can enable loose mode for `es6.modules` using the 'loose' option. See: http://babeljs.io/docs/advanced/loose/ and http://babeljs.io/docs/usage/options/");
+	    }
+	  }
+
+	  return foundReactClasses;
+	}
+
+	module.exports = makeExportsHot;
+
+
+/***/ },
+/* 272 */
+/***/ function(module, exports) {
+
+	function hasRender(Class) {
+	  var prototype = Class.prototype;
+	  if (!prototype) {
+	    return false;
+	  }
+
+	  return typeof prototype.render === 'function';
+	}
+
+	function descendsFromReactComponent(Class, React) {
+	  if (!React.Component) {
+	    return false;
+	  }
+
+	  var Base = Object.getPrototypeOf(Class);
+	  while (Base) {
+	    if (Base === React.Component) {
+	      return true;
+	    }
+
+	    Base = Object.getPrototypeOf(Base);
+	  }
+
+	  return false;
+	}
+
+	function isReactClassish(Class, React) {
+	  if (typeof Class !== 'function') {
+	    return false;
+	  }
+
+	  // React 0.13
+	  if (hasRender(Class) || descendsFromReactComponent(Class, React)) {
+	    return true;
+	  }
+
+	  // React 0.12 and earlier
+	  if (Class.type && hasRender(Class.type)) {
+	    return true;
+	  }
+
+	  return false;
+	}
+
+	module.exports = isReactClassish;
+
+/***/ },
+/* 273 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var isReactClassish = __webpack_require__(272);
+
+	function isReactElementish(obj, React) {
+	  if (!obj) {
+	    return false;
+	  }
+
+	  return Object.prototype.toString.call(obj.props) === '[object Object]' &&
+	         isReactClassish(obj.type, React);
+	}
+
+	module.exports = isReactElementish;
+
+/***/ },
+/* 274 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(module) {/* REACT HOT LOADER */ if (true) { (function () { var ReactHotAPI = __webpack_require__(77), RootInstanceProvider = __webpack_require__(85), ReactMount = __webpack_require__(87), React = __webpack_require__(139); module.makeHot = module.hot.data ? module.hot.data.makeHot : ReactHotAPI(function () { return RootInstanceProvider.getRootInstances(ReactMount); }, React); })(); } try { (function () {
+
+	"use strict";
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.createEarths = createEarths;
+	exports.addMarker = addMarker;
+	var WebGLEarth = window.WebGLEarth;
+	var WE = window.WE;
+	var msBetweenUpdate = 50;
+
+	var earth1 = undefined;
+	var earth2 = undefined;
+	var center = [40.0, -100.0]; // eslint-disable-line no-magic-numbers
+	var zoom = 3.0; // eslint-disable-line no-magic-numbers
+
+	function antipode(coord) {
+	  return [-1 * coord[0], coord[1] - 180]; // eslint-disable-line no-magic-numbers
+	}
+
+	function update() {
+	  if (center[0] === earth1.getCenter()[0] && center[1] === earth1.getCenter()[1]) {
+	    center = antipode(earth2.getCenter());
+	    earth1.setView([center[0], center[1]]);
+	  } else {
+	    center = earth1.getCenter();
+	    var antip = antipode(earth1.getCenter());
+	    earth2.setView([antip[0], antip[1]]);
+	  }
+	  if (earth1.getZoom() === zoom) {
+	    zoom = earth2.getZoom();
+	    earth1.setZoom(zoom);
+	  } else {
+	    zoom = earth1.getZoom();
+	    earth2.setZoom(zoom);
+	  }
+	}
+
+	function markerPath(color) {
+	  return "./imgs/" + color + "-icon.png";
+	}
+
+	function createEarths() {
+	  var proxyHost = "http://data.webglearth.com/cgi-bin/corsproxy.fcgi";
+	  earth1 = new WebGLEarth("earth1", { proxyHost: proxyHost, center: center });
+	  earth2 = new WebGLEarth("earth2", { proxyHost: proxyHost, center: antipode(center) });
+	  earth1.setZoom(zoom);
+	  earth2.setZoom(zoom);
+
+	  var marker = WE.marker([51.5, -0.09], markerPath("blue")).addTo(earth1); // eslint-disable-line no-magic-numbers
+	  marker.bindPopup("<b>Hello world!</b><br>I am a popup.<br /><span style='font-size:10pxcolor:#999'>Tip: Another popup is hidden in Cairo..</span>", { maxWidth: 150, closeButton: true }).openPopup();
+
+	  var marker2 = WE.marker([30.058056, 31.228889], markerPath("green")).addTo(earth2); // eslint-disable-line no-magic-numbers
+	  marker2.bindPopup("<b>Cairo</b><br>Yay, you found me!", { maxWidth: 120, closeButton: false });
+
+	  var markerCustom = WE.marker([50, -9], markerPath("red")); // eslint-disable-line no-magic-numbers
+	  markerCustom.addTo(earth1);
+
+	  // Recalculate positions whenever any of the two globes moves
+	  setInterval(update, msBetweenUpdate);
+	  return [earth1, earth2];
+	}
+
+	function generateMarkerClickHandler(_lat, _lng, _id) {
+	  return function () {
+	    var lat = _lat;
+	    var lng = _lng;
+	    var nodeId = _id;
+	    debugger;
+	  };
+	}
+
+	function addMarker(lat, lng, color, id) {
+	  var marker1 = WE.marker([lat, lng], markerPath(color));
+	  marker1.addTo(earth1);
+	  marker1.element.onclick = generateMarkerClickHandler(lat, lng, id);
+	  var marker2 = WE.marker([lat, lng], markerPath(color));
+	  marker2.addTo(earth2);
+	  marker2.element.onclick = generateMarkerClickHandler(lat, lng, id);
+	  return [marker1, marker2];
+	}
+
+	/* REACT HOT LOADER */ }).call(this); } finally { if (true) { (function () { var foundReactClasses = module.hot.data && module.hot.data.foundReactClasses || false; if (module.exports && module.makeHot) { var makeExportsHot = __webpack_require__(271); if (makeExportsHot(module, __webpack_require__(139))) { foundReactClasses = true; } var shouldAcceptModule = true && foundReactClasses; if (shouldAcceptModule) { module.hot.accept(function (err) { if (err) { console.error("Cannot not apply hot update to " + "webglearth.js" + ": " + err.message); } }); } } module.hot.dispose(function (data) { data.makeHot = module.makeHot; data.foundReactClasses = foundReactClasses; }); })(); } }
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(4)(module)))
+
+/***/ },
+/* 275 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(module) {/* REACT HOT LOADER */ if (true) { (function () { var ReactHotAPI = __webpack_require__(77), RootInstanceProvider = __webpack_require__(85), ReactMount = __webpack_require__(87), React = __webpack_require__(139); module.makeHot = module.hot.data ? module.hot.data.makeHot : ReactHotAPI(function () { return RootInstanceProvider.getRootInstances(ReactMount); }, React); })(); } try { (function () {
@@ -30127,133 +30356,6 @@
 
 	/* REACT HOT LOADER */ }).call(this); } finally { if (true) { (function () { var foundReactClasses = module.hot.data && module.hot.data.foundReactClasses || false; if (module.exports && module.makeHot) { var makeExportsHot = __webpack_require__(271); if (makeExportsHot(module, __webpack_require__(139))) { foundReactClasses = true; } var shouldAcceptModule = true && foundReactClasses; if (shouldAcceptModule) { module.hot.accept(function (err) { if (err) { console.error("Cannot not apply hot update to " + "mapFunctions.js" + ": " + err.message); } }); } } module.hot.dispose(function (data) { data.makeHot = module.makeHot; data.foundReactClasses = foundReactClasses; }); })(); } }
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(4)(module)))
-
-/***/ },
-/* 271 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var isReactClassish = __webpack_require__(272),
-	    isReactElementish = __webpack_require__(273);
-
-	function makeExportsHot(m, React) {
-	  if (isReactElementish(m.exports, React)) {
-	    // React elements are never valid React classes
-	    return false;
-	  }
-
-	  var freshExports = m.exports,
-	      exportsReactClass = isReactClassish(m.exports, React),
-	      foundReactClasses = false;
-
-	  if (exportsReactClass) {
-	    m.exports = m.makeHot(m.exports, '__MODULE_EXPORTS');
-	    foundReactClasses = true;
-	  }
-
-	  for (var key in m.exports) {
-	    if (!Object.prototype.hasOwnProperty.call(freshExports, key)) {
-	      continue;
-	    }
-
-	    if (exportsReactClass && key === 'type') {
-	      // React 0.12 also puts classes under `type` property for compat.
-	      // Skip to avoid updating twice.
-	      continue;
-	    }
-
-	    var value;
-	    try {
-	      value = freshExports[key];
-	    } catch (err) {
-	      continue;
-	    }
-
-	    if (!isReactClassish(value, React)) {
-	      continue;
-	    }
-
-	    if (Object.getOwnPropertyDescriptor(m.exports, key).writable) {
-	      m.exports[key] = m.makeHot(value, '__MODULE_EXPORTS_' + key);
-	      foundReactClasses = true;
-	    } else {
-	      console.warn("Can't make class " + key + " hot reloadable due to being read-only. To fix this you can try two solutions. First, you can exclude files or directories (for example, /node_modules/) using 'exclude' option in loader configuration. Second, if you are using Babel, you can enable loose mode for `es6.modules` using the 'loose' option. See: http://babeljs.io/docs/advanced/loose/ and http://babeljs.io/docs/usage/options/");
-	    }
-	  }
-
-	  return foundReactClasses;
-	}
-
-	module.exports = makeExportsHot;
-
-
-/***/ },
-/* 272 */
-/***/ function(module, exports) {
-
-	function hasRender(Class) {
-	  var prototype = Class.prototype;
-	  if (!prototype) {
-	    return false;
-	  }
-
-	  return typeof prototype.render === 'function';
-	}
-
-	function descendsFromReactComponent(Class, React) {
-	  if (!React.Component) {
-	    return false;
-	  }
-
-	  var Base = Object.getPrototypeOf(Class);
-	  while (Base) {
-	    if (Base === React.Component) {
-	      return true;
-	    }
-
-	    Base = Object.getPrototypeOf(Base);
-	  }
-
-	  return false;
-	}
-
-	function isReactClassish(Class, React) {
-	  if (typeof Class !== 'function') {
-	    return false;
-	  }
-
-	  // React 0.13
-	  if (hasRender(Class) || descendsFromReactComponent(Class, React)) {
-	    return true;
-	  }
-
-	  // React 0.12 and earlier
-	  if (Class.type && hasRender(Class.type)) {
-	    return true;
-	  }
-
-	  return false;
-	}
-
-	module.exports = isReactClassish;
-
-/***/ },
-/* 273 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var isReactClassish = __webpack_require__(272);
-
-	function isReactElementish(obj, React) {
-	  if (!obj) {
-	    return false;
-	  }
-
-	  return Object.prototype.toString.call(obj.props) === '[object Object]' &&
-	         isReactClassish(obj.type, React);
-	}
-
-	module.exports = isReactElementish;
 
 /***/ }
 /******/ ]);

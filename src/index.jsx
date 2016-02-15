@@ -1,8 +1,10 @@
 import {compose} from "redux"
 import axios from "axios"
-import MapBoxMap from "./../lib/mapFunctions"
+import MapBoxMap from "./mapFunctions"
+import {createEarths, addMarker} from "./webglearth"
 
-const map = new MapBoxMap("map")
+const mapBoxMap = new MapBoxMap("map")
+const [earth1, earth2] = createEarths()
 const nodesList = []
 const nodesObj = {}
 const edgesList = []
@@ -31,7 +33,7 @@ function notInList (list) { return item => !list.includes(item) }
 
 // business logic
 function addNodesToMap (nodes, color = "default") {
-  nodes.forEach(node => map.addMarkerToMap(node, color, nodeClickHandler))
+  nodes.forEach(node => mapBoxMap.addMarkerToMap(node, color, nodeClickHandler))
   return nodes
 }
 function addNodesToListAndObj (nodes) {
@@ -47,13 +49,13 @@ function addEdgesToMap (edges, color = "grey") {
   edges.forEach(edge => {
     const node1 = nodesObj[edge.first_node_id]
     const node2 = nodesObj[edge.second_node_id]
-    map.addEdgeToMap(node1, node2, color)
+    mapBoxMap.addEdgeToMap(node1, node2, color)
   })
   return edges
 }
 function clearMap () {
-  map.clearMarkers()
-  map.clearEdges()
+  mapBoxMap.clearMarkers()
+  mapBoxMap.clearEdges()
   addNodesToMap(nodesList)
   addEdgesToMap(edgesList)
 }
