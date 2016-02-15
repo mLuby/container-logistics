@@ -54,7 +54,7 @@
 /******/ 	
 /******/ 	
 /******/ 	var hotApplyOnUpdate = true;
-/******/ 	var hotCurrentHash = "1d3a87ab477ef56c581a"; // eslint-disable-line no-unused-vars
+/******/ 	var hotCurrentHash = "4118d6f345cf8793d522"; // eslint-disable-line no-unused-vars
 /******/ 	var hotCurrentModuleData = {};
 /******/ 	var hotCurrentParents = []; // eslint-disable-line no-unused-vars
 /******/ 	
@@ -8062,8 +8062,11 @@
 
 	  (_console = console).log.apply(_console, arguments);
 	} // eslint-disable-line no-console
-	function first(list) {
+	function fst(list) {
 	  return list[0];
+	}
+	function snd(list) {
+	  return list[1];
 	}
 	function loadLocalCSV(relativeFilePath) {
 	  return _axios2.default.get(relativeFilePath);
@@ -8071,15 +8074,26 @@
 	function mergeObjs(objList) {
 	  return Object.assign.apply(0, objList);
 	}
+	function prop(key) {
+	  return function (obj) {
+	    return obj[key];
+	  };
+	}
 	function respToData(response) {
-	  return response.data;
+	  return prop("data")(response);
+	}
+	function tryNum(maybeNum) {
+	  return isNaN(Number(maybeNum)) ? maybeNum : Number(maybeNum);
+	}
+	function trim(str) {
+	  return str.trim();
 	}
 	function csvToJson(csv) {
 	  var allLines = csv.split("\n");
-	  var keys = allLines[0].split(",");
+	  var keys = allLines[0].split(",").map(trim); // note: first line of nodes ends in both \n and \r
 	  return allLines.slice(1).map(function (line) {
-	    return line.split(",").map(function (value, index) {
-	      return _defineProperty({}, keys[index], value);
+	    return line.split(",").map(trim).map(function (value, index) {
+	      return _defineProperty({}, keys[index], tryNum(value));
 	    });
 	  }).map(mergeObjs);
 	}
@@ -8093,11 +8107,13 @@
 	  return nodes;
 	}
 	function addNodesToListAndObj(nodes) {
-	  nodesList.concat(nodes);
+	  nodes.forEach(function (node) {
+	    return nodesList.push(node);
+	  });
 	  nodes.reduce(function (obj, node) {
 	    return Object.assign(obj, _defineProperty({}, node.id, node));
 	  }, nodesObj);
-	  return nodes;
+	  return nodesList;
 	}
 	function addEdgesToMap(edges) {
 	  var color = "grey";
@@ -8106,11 +8122,86 @@
 	    var node2 = nodesObj[edge.second_node_id];
 	    map.addEdgeToMap(node1, node2, color);
 	  });
+	  return edges;
 	}
+	function countContainers(nodes) {
+	  return nodes.reduce(function (sum, node) {
+	    return sum + node.number_of_containers_at_location;
+	  }, 0);
+	}
+	function shortestDistanceFirst(edge1, edge2) {
+	  return edge1.travel_time_in_hours_between_nodes - edge2.travel_time_in_hours_between_nodes;
+	}
+	function addEdgesToNode(edges) {
+	  return function (node) {
+	    node.edges = edges.filter(function (edge) {
+	      return edge.first_node_id === node.id || edge.second_node_id === node.id;
+	    }).sort(shortestDistanceFirst);
+	  };
+	}
+	function createGraph(edges) {
+	  nodesList.forEach(addEdgesToNode(edges));
+	  return nodesList;
+	}
+	function city(node) {
+	  return node.city_name;
+	}
+	function nodesInRange(targetNode, time) {
+	  var node = arguments.length <= 2 || arguments[2] === undefined ? targetNode : arguments[2];
+	  var nodes = arguments.length <= 3 || arguments[3] === undefined ? [] : arguments[3];
+
+	  function edgeWithinTravelTime(edge) {
+	    return edge.travel_time_in_hours_between_nodes <= time;
+	  }
+	  function nodeTimeFromEdge(edge) {
+	    return { time: edge.travel_time_in_hours_between_nodes, node: edge.first_node_id === node.id ? nodesObj[edge.second_node_id] : nodesObj[edge.first_node_id] };
+	  }
+	  function notInNodes(nodeTime) {
+	    return !nodes.includes(nodeTime.node);
+	  }
+	  function notTarget(nodeTime) {
+	    return nodeTime.node !== targetNode;
+	  }
+	  function pushToNodes(theNode) {
+	    nodes.push(theNode);
+	  }
+	  function toNode(nodeTime) {
+	    return nodeTime.node;
+	  }
+	  // given some nodes
+	  // find node's neighbors within travel time
+	  // dedup neighbors against nodes (consider Map)
+	  var neighbors = node.edges.filter(edgeWithinTravelTime).map(nodeTimeFromEdge).filter(notInNodes).filter(notTarget);
+	  // push unique neighbors to nodes
+	  neighbors.map(toNode).forEach(pushToNodes);
+	  // recurse into unique neighbors with new time and nodes
+	  neighbors.forEach(function (nodeTime) {
+	    return nodesInRange(targetNode, time - nodeTime.time, nodeTime.node, nodes);
+	  });
+	  // debugger
+	  return nodes;
+	}
+	function markNodes(nodes, color) {
+	  nodes.forEach(function (node) {
+	    return map.addMarkerToMap(node, color, nodeClickHandler);
+	  });
+	}
+	// function markEdges (nodePairs, color) { nodePairs.forEach(nodePair => map.addEdgeToMap(fst(nodePair), snd(nodePair), color)) }
 
 	var nodesPromise = loadLocalCSV("../data/nodes.csv").then((0, _redux.compose)(addNodesToListAndObj, addNodesToMap, csvToJson, respToData));
 	var edgesPromise = loadLocalCSV("../data/edges.csv").then((0, _redux.compose)(csvToJson, respToData));
-	_axios2.default.all([edgesPromise, nodesPromise]).then((0, _redux.compose)(addEdgesToMap, first));
+	_axios2.default.all([edgesPromise, nodesPromise]).then((0, _redux.compose)(createGraph, addEdgesToMap, fst)).then(function () {
+	  var node = nodesObj[34];
+	  var time = 15;
+	  var nodes = nodesInRange(node, time);
+	  console.log('node', node, 'time', time);
+	  console.log('nodesInRange 10', nodes.map(city));
+	  console.log('nodesInRange 10', nodes);
+	  console.log('countContainers', countContainers(nodes));
+	  markNodes([node], "green");
+	  markNodes(nodes, "red");
+	  // markEdges(nodePairs, "red")
+	});
 
 	/* REACT HOT LOADER */ }).call(this); } finally { if (true) { (function () { var foundReactClasses = module.hot.data && module.hot.data.foundReactClasses || false; if (module.exports && module.makeHot) { var makeExportsHot = __webpack_require__(271); if (makeExportsHot(module, __webpack_require__(139))) { foundReactClasses = true; } var shouldAcceptModule = true && foundReactClasses; if (shouldAcceptModule) { module.hot.accept(function (err) { if (err) { console.error("Cannot not apply hot update to " + "index.jsx" + ": " + err.message); } }); } } module.hot.dispose(function (data) { data.makeHot = module.makeHot; data.foundReactClasses = foundReactClasses; }); })(); } }
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(4)(module)))
