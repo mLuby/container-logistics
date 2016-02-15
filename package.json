@@ -1,0 +1,28 @@
+{
+  "name": "react-logistics",
+  "version": "0.1.0",
+  "description": "logistics",
+  "main": "index.js",
+  "scripts": {
+    "start": "open http://0.0.0.0:8080/dist & node server.js & webpack --watch & webpack-dev-server --watch"
+  },
+  "author": "Mike Luby <Michael@mLuby.com> (https://github.com/mLuby)",
+  "license": "ISC",
+  "dependencies": {
+    "react": "^0.14.7",
+    "react-dom": "^0.14.7",
+    "react-redux": "^4.4.0",
+    "redux": "^3.3.1"
+  },
+  "devDependencies": {
+    "babel-core": "^6.5.2",
+    "babel-loader": "^6.2.2",
+    "babel-preset-es2015": "^6.5.0",
+    "babel-preset-react": "^6.5.0",
+    "eslint": "^2.0.0",
+    "eslint-plugin-react": "^3.16.1",
+    "react-hot-loader": "^1.3.0",
+    "webpack": "^1.12.13",
+    "webpack-dev-server": "^1.14.1"
+  }
+}
