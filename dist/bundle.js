@@ -54,7 +54,7 @@
 /******/ 	
 /******/ 	
 /******/ 	var hotApplyOnUpdate = true;
-/******/ 	var hotCurrentHash = "4118d6f345cf8793d522"; // eslint-disable-line no-unused-vars
+/******/ 	var hotCurrentHash = "1d988b0a5dfccf4378a2"; // eslint-disable-line no-unused-vars
 /******/ 	var hotCurrentModuleData = {};
 /******/ 	var hotCurrentParents = []; // eslint-disable-line no-unused-vars
 /******/ 	
@@ -8056,12 +8056,8 @@
 	var map = new _mapFunctions2.default("map");
 	var nodesList = [];
 	var nodesObj = {};
+	var edgesList = [];
 
-	function log() {
-	  var _console;
-
-	  (_console = console).log.apply(_console, arguments);
-	} // eslint-disable-line no-console
 	function fst(list) {
 	  return list[0];
 	}
@@ -8097,9 +8093,6 @@
 	    });
 	  }).map(mergeObjs);
 	}
-	function nodeClickHandler(event) {
-	  log(event);
-	}
 	function addNodesToMap(nodes) {
 	  nodes.forEach(function (node) {
 	    return map.addMarkerToMap(node, node.color || "default", nodeClickHandler);
@@ -8115,6 +8108,12 @@
 	  }, nodesObj);
 	  return nodesList;
 	}
+	function addEdgesToList(edges) {
+	  edges.forEach(function (edge) {
+	    return edgesList.push(edge);
+	  });
+	  return edges;
+	}
 	function addEdgesToMap(edges) {
 	  var color = "grey";
 	  edges.forEach(function (edge) {
@@ -8123,6 +8122,12 @@
 	    map.addEdgeToMap(node1, node2, color);
 	  });
 	  return edges;
+	}
+	function clearMap() {
+	  map.clearMarkers();
+	  map.clearEdges();
+	  addNodesToMap(nodesList);
+	  addEdgesToMap(edgesList);
 	}
 	function countContainers(nodes) {
 	  return nodes.reduce(function (sum, node) {
@@ -8143,9 +8148,7 @@
 	  nodesList.forEach(addEdgesToNode(edges));
 	  return nodesList;
 	}
-	function city(node) {
-	  return node.city_name;
-	}
+	var city = prop("city_name");
 	function nodesInRange(targetNode, time) {
 	  var node = arguments.length <= 2 || arguments[2] === undefined ? targetNode : arguments[2];
 	  var nodes = arguments.length <= 3 || arguments[3] === undefined ? [] : arguments[3];
@@ -8187,21 +8190,23 @@
 	  });
 	}
 	// function markEdges (nodePairs, color) { nodePairs.forEach(nodePair => map.addEdgeToMap(fst(nodePair), snd(nodePair), color)) }
-
+	function nodeClickHandler(event) {
+	  function hasLatLng(node) {
+	    return node.latitude === event.latlng.lat && node.longitude === event.latlng.lng;
+	  }
+	  var targetNode = fst(nodesList.filter(hasLatLng));
+	  var time = 15;
+	  var nodes = nodesInRange(targetNode, time);
+	  console.log('node', targetNode, 'time', time);
+	  console.log('nodesInRange 10', nodes.map(city));
+	  console.log('countContainers', countContainers(nodes));
+	  clearMap();
+	  markNodes([targetNode], "green");
+	  markNodes(nodes, "red");
+	}
 	var nodesPromise = loadLocalCSV("../data/nodes.csv").then((0, _redux.compose)(addNodesToListAndObj, addNodesToMap, csvToJson, respToData));
 	var edgesPromise = loadLocalCSV("../data/edges.csv").then((0, _redux.compose)(csvToJson, respToData));
-	_axios2.default.all([edgesPromise, nodesPromise]).then((0, _redux.compose)(createGraph, addEdgesToMap, fst)).then(function () {
-	  var node = nodesObj[34];
-	  var time = 15;
-	  var nodes = nodesInRange(node, time);
-	  console.log('node', node, 'time', time);
-	  console.log('nodesInRange 10', nodes.map(city));
-	  console.log('nodesInRange 10', nodes);
-	  console.log('countContainers', countContainers(nodes));
-	  markNodes([node], "green");
-	  markNodes(nodes, "red");
-	  // markEdges(nodePairs, "red")
-	});
+	_axios2.default.all([edgesPromise, nodesPromise]).then((0, _redux.compose)(createGraph, addEdgesToMap, addEdgesToList, fst));
 
 	/* REACT HOT LOADER */ }).call(this); } finally { if (true) { (function () { var foundReactClasses = module.hot.data && module.hot.data.foundReactClasses || false; if (module.exports && module.makeHot) { var makeExportsHot = __webpack_require__(271); if (makeExportsHot(module, __webpack_require__(139))) { foundReactClasses = true; } var shouldAcceptModule = true && foundReactClasses; if (shouldAcceptModule) { module.hot.accept(function (err) { if (err) { console.error("Cannot not apply hot update to " + "index.jsx" + ": " + err.message); } }); } } module.hot.dispose(function (data) { data.makeHot = module.makeHot; data.foundReactClasses = foundReactClasses; }); })(); } }
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(4)(module)))
