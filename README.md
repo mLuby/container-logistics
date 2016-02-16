@@ -1,3 +1,4 @@
+![](https://raw.githubusercontent.com/mLuby/container-logistics/master/container-logistics.gif)
 # NOTES:
 - to run: `$ npm install && npm start` # (should open 0.0.0.0:8080/dist and display maps)
 - There is a `\r` after the first line of nodes.csv.
