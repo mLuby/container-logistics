@@ -54,7 +54,7 @@
 /******/ 	
 /******/ 	
 /******/ 	var hotApplyOnUpdate = true;
-/******/ 	var hotCurrentHash = "e77d1a367f9b8ea70045"; // eslint-disable-line no-unused-vars
+/******/ 	var hotCurrentHash = "5e31df6db1f291856f8c"; // eslint-disable-line no-unused-vars
 /******/ 	var hotCurrentModuleData = {};
 /******/ 	var hotCurrentParents = []; // eslint-disable-line no-unused-vars
 /******/ 	
@@ -30324,35 +30324,11 @@
 	exports.clearEdges = clearEdges;
 	var WebGLEarth = window.WebGLEarth;
 	var WE = window.WE;
-	var msBetweenUpdate = 50;
 	var proxyHost = "http://data.webglearth.com/cgi-bin/corsproxy.fcgi";
 
 	var earth1 = undefined;
-	var earth2 = undefined;
 	var center = [40.0, -100.0]; // eslint-disable-line no-magic-numbers
 	var zoom = 3.0; // eslint-disable-line no-magic-numbers
-
-	function antipode(coord) {
-	  return [-1 * coord[0], coord[1] - 180]; // eslint-disable-line no-magic-numbers
-	}
-
-	function update() {
-	  if (center[0] === earth1.getCenter()[0] && center[1] === earth1.getCenter()[1]) {
-	    center = antipode(earth2.getCenter());
-	    earth1.setView([center[0], center[1]]);
-	  } else {
-	    center = earth1.getCenter();
-	    var antip = antipode(earth1.getCenter());
-	    earth2.setView([antip[0], antip[1]]);
-	  }
-	  if (earth1.getZoom() === zoom) {
-	    zoom = earth2.getZoom();
-	    earth1.setZoom(zoom);
-	  } else {
-	    zoom = earth1.getZoom();
-	    earth2.setZoom(zoom);
-	  }
-	}
 
 	function markerPath(color) {
 	  return "./imgs/" + color + "-icon.png";
@@ -30360,45 +30336,35 @@
 
 	function create() {
 	  earth1 = new WebGLEarth("earth1", { proxyHost: proxyHost, center: center });
-	  earth2 = new WebGLEarth("earth2", { proxyHost: proxyHost, center: antipode(center) });
 	  earth1.setZoom(zoom);
-	  earth2.setZoom(zoom);
-	  // Recalculate positions whenever any of the two globes moves
-	  setInterval(update, msBetweenUpdate);
-	  return [earth1, earth2];
+	  return [earth1];
 	}
 
 	function addMarker(latitude, longitude, color, clickHandler) {
 	  var marker1 = WE.marker([latitude, longitude], markerPath(color));
-	  var marker2 = WE.marker([latitude, longitude], markerPath(color));
 	  marker1.addTo(earth1);
-	  marker2.addTo(earth2);
 	  marker1.element.onclick = clickHandler;
-	  marker2.element.onclick = clickHandler;
-	  return [marker1, marker2];
+	  return [marker1];
 	}
 
 	function addEdge(lat1, lon1, lat2, lon2, color, opacity) {
 	  var edge1 = WE.polygon([[lat1, lon1], [lat2, lon2], [lat1, lon1]], { color: color, opacity: opacity });
-	  var edge2 = WE.polygon([[lat1, lon1], [lat2, lon2], [lat1, lon1]], { color: color, opacity: opacity });
 	  edge1.addTo(earth1);
-	  edge2.addTo(earth2);
-	  return [edge1, edge2];
+	  return [edge1];
 	}
 
 	function clearMarkers(markers) {
 	  while (markers.length) {
 	    var marker = markers.pop(); // need to clear out markers so it can be refilled
 	    earth1.removeMarker(marker);
-	    earth2.removeMarker(marker); // would be nice to know which one marker is part of
 	  }
 	}
 
 	function clearEdges(edges) {
+	  // TODO doesn't work…
 	  while (edges.length) {
 	    var edge = edges.pop(); // need to clear out edges so it can be refilled
 	    earth1.removeMarker(edge);
-	    earth2.removeMarker(edge); // would be nice to know which one marker is part of
 	  }
 	}
 

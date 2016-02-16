@@ -5,5 +5,12 @@ body {
 }
 
 .controls {
-  text-align: center
+  text-align: left;
+  float: left;
+  width: 150px;
+  height: 100vh;
+}
+
+input {
+  width: 100%;
 }

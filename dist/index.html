@@ -15,16 +15,17 @@
   <body>
     <div class="controls">
       <p>Input Number of Hours</p>
-      <input id="timeInput" type="number" value="10" />
-      <input id="submit" type="submit" />
+      <form onsubmit="return false">
+        <input id="timeInput" type="number" value="10" />
+        <input id="submit" type="submit" />
+      </form>
       <p id="messageArea"></p>
     </div>
-    <!-- MapBox -->
-    <div id="map" class="map"></div>
-    <!-- WebGL Earth -->
-    <div class="earths" style="display:none;">
+    <div class="maps">
+      <!-- WebGL Earth -->
       <div id="earth1" class="earth1"><div class="cross"></div></div>
-      <div id="earth2" class="earth2"><div class="cross"></div></div>
+      <!-- MapBox -->
+      <div id="map" class="map"></div>
     </div>
     <script src="bundle.js"></script>
   </body>
