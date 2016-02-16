@@ -1,11 +1,16 @@
 todos:
-- [ ] visualize graph of cities on web page as a map (Task 1)
-- [ ] calculate cities that can supply containers in time
-- [ ] enhancement: temp at each city (or other api use)
-- [ ] enhancement: calc minimum time to add N containers to site
-- [ ] enhancement: 3D map
-- [ ] enhancement: balance containers among cities
+- [√] visualize graph of cities on web page as a map (Task 1)
+- [√] calculate cities that can supply containers in time
+- [√] enhancement: 3D map
+- [ ] bug: too many containers for Chamberlain 15 hrs (440 vs 200)
+- [ ] remove edges from 3D map
 - [ ] remove clearmetal notice and todos
+
+NOTES:
+- There is a \r after the first line of nodes.csv.
+- Clearing and redrawing all the nodes and edges. Would be much more efficient to keep track of the current active ones, then only change those and the new active ones.
+- Minuglified mapbox.js complains if lib/images/icons etc isn't present—ideally would fix that path upstream.
+- Using webpack/redux build tools because I thought I'd use react for this, but it was unnecessary.
 
 Thanks for your interest in ClearMetal! When you’ve finished, submit your code as a zip file to recruiting@clearmetal.com.  We will contact you shortly after.
 
