@@ -54,7 +54,7 @@
 /******/ 	
 /******/ 	
 /******/ 	var hotApplyOnUpdate = true;
-/******/ 	var hotCurrentHash = "e2da188eac3be04db8e9"; // eslint-disable-line no-unused-vars
+/******/ 	var hotCurrentHash = "e77d1a367f9b8ea70045"; // eslint-disable-line no-unused-vars
 /******/ 	var hotCurrentModuleData = {};
 /******/ 	var hotCurrentParents = []; // eslint-disable-line no-unused-vars
 /******/ 	
@@ -8073,6 +8073,7 @@
 	var edgesList = [];
 	var earthsMarkersList = [];
 	var earthsEdgesList = [];
+	var selectedNode = null;
 	// pure helpers
 	function fst(list) {
 	  return list[0];
@@ -8218,9 +8219,16 @@
 	  displayNodes(nodesList);
 	  displayEdges(edgesList);
 	}
+	function getTimeInput() {
+	  return Number(document.getElementById("timeInput").value);
+	}
+	function displayMessage(html) {
+	  document.getElementById("messageArea").innerHTML = html;
+	}
 	function nodeClickHandler(targetNode) {
 	  return function () {
-	    var time = 10;
+	    selectedNode = targetNode;
+	    var time = getTimeInput();
 
 	    var _inRange = inRange(targetNode, time);
 
@@ -8228,28 +8236,37 @@
 
 	    var nodes = _inRange2[0];
 	    var edges = _inRange2[1];
-	    // console.log('node', targetNode, 'time', time)
-	    // console.log('inRange nodes', nodes.map(prop("city_name")))
-	    // console.log('inRange edges', edges)
-	    // console.log('countContainers', countContainers(nodes))
 
+	    var city = targetNode.city_name;
+	    var containerCount = countContainers(nodes);
+	    displayMessage("Total containers that can reach <b>" + city + "</b> within " + time + " hours is <b>" + containerCount + "</b>");
 	    clearDisplay();
 	    displayEdges(edges, red, activeEdgeOpacity);
 	    displayNodes(nodes, "red");
 	    displayNodes([targetNode], "green");
 	  };
 	}
-	// loading CSVs and displays
+	// init displays and load CSVs
+	function submitHandler() {
+	  if (selectedNode) {
+	    nodeClickHandler(selectedNode)();
+	  } else {
+	    document.getElementById("messageArea").innerText = "Please select a node now";
+	  }
+	}
+	document.getElementById("submit").onclick = submitHandler;
+
+	earths.create();
+	var mapBoxMap = new _mapFunctions2.default("map");
+
 	function loadLocalCSV(relativeFilePath) {
 	  return _axios2.default.get(relativeFilePath);
 	}
-	var mapBoxMap = new _mapFunctions2.default("map");
-	earths.create();
 	var nodesPromise = loadLocalCSV("../data/nodes.csv").then((0, _redux.compose)(addNodesToListAndObj, displayNodes, csvToJson, prop("data")));
 	var edgesPromise = loadLocalCSV("../data/edges.csv").then((0, _redux.compose)(csvToJson, prop("data")));
 	_axios2.default.all([edgesPromise, nodesPromise]).then((0, _redux.compose)(createGraph, displayEdges, addEdgesToList, fst));
 
-	/* REACT HOT LOADER */ }).call(this); } finally { if (true) { (function () { var foundReactClasses = module.hot.data && module.hot.data.foundReactClasses || false; if (module.exports && module.makeHot) { var makeExportsHot = __webpack_require__(271); if (makeExportsHot(module, __webpack_require__(139))) { foundReactClasses = true; } var shouldAcceptModule = true && foundReactClasses; if (shouldAcceptModule) { module.hot.accept(function (err) { if (err) { console.error("Cannot not apply hot update to " + "index.jsx" + ": " + err.message); } }); } } module.hot.dispose(function (data) { data.makeHot = module.makeHot; data.foundReactClasses = foundReactClasses; }); })(); } }
+	/* REACT HOT LOADER */ }).call(this); } finally { if (true) { (function () { var foundReactClasses = module.hot.data && module.hot.data.foundReactClasses || false; if (module.exports && module.makeHot) { var makeExportsHot = __webpack_require__(271); if (makeExportsHot(module, __webpack_require__(139))) { foundReactClasses = true; } var shouldAcceptModule = true && foundReactClasses; if (shouldAcceptModule) { module.hot.accept(function (err) { if (err) { console.error("Cannot not apply hot update to " + "index.js" + ": " + err.message); } }); } } module.hot.dispose(function (data) { data.makeHot = module.makeHot; data.foundReactClasses = foundReactClasses; }); })(); } }
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(4)(module)))
 
 /***/ },

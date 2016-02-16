@@ -12,6 +12,7 @@ const nodesObj = {}
 const edgesList = []
 const earthsMarkersList = []
 const earthsEdgesList = []
+let selectedNode = null
 // pure helpers
 function fst (list) { return list[0] }
 function mergeObjs (objList) {
@@ -111,24 +112,38 @@ function clearDisplay () {
   displayNodes(nodesList)
   displayEdges(edgesList)
 }
+function getTimeInput () {
+  return Number(document.getElementById("timeInput").value)
+}
+function displayMessage (html) { document.getElementById("messageArea").innerHTML = html }
 function nodeClickHandler (targetNode) {
   return () => {
-    const time = 10
+    selectedNode = targetNode
+    const time = getTimeInput()
     const [nodes, edges] = inRange(targetNode, time)
-    // console.log('node', targetNode, 'time', time)
-    // console.log('inRange nodes', nodes.map(prop("city_name")))
-    // console.log('inRange edges', edges)
-    // console.log('countContainers', countContainers(nodes))
+    const city = targetNode.city_name
+    const containerCount = countContainers(nodes)
+    displayMessage(`Total containers that can reach <b>${city}</b> within ${time} hours is <b>${containerCount}</b>`)
     clearDisplay()
     displayEdges(edges, red, activeEdgeOpacity)
     displayNodes(nodes, "red")
     displayNodes([targetNode], "green")
   }
 }
-// loading CSVs and displays
-function loadLocalCSV (relativeFilePath) { return axios.get(relativeFilePath) }
-const mapBoxMap = new MapBoxMap("map")
+// init displays and load CSVs
+function submitHandler () {
+  if (selectedNode) {
+    nodeClickHandler(selectedNode)()
+  } else {
+    document.getElementById("messageArea").innerText = "Please select a node now"
+  }
+}
+document.getElementById("submit").onclick = submitHandler
+
 earths.create()
+const mapBoxMap = new MapBoxMap("map")
+
+function loadLocalCSV (relativeFilePath) { return axios.get(relativeFilePath) }
 const nodesPromise = loadLocalCSV("../data/nodes.csv").then(compose(addNodesToListAndObj, displayNodes, csvToJson, prop("data")))
 const edgesPromise = loadLocalCSV("../data/edges.csv").then(compose(csvToJson, prop("data")))
 axios.all([edgesPromise, nodesPromise]).then(compose(createGraph, displayEdges, addEdgesToList, fst))
