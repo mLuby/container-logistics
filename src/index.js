@@ -42,6 +42,15 @@ function csvToJson (csv) {
 }
 function pushTo (list) { return item => { list.push(item); return item } }
 function notInList (list) { return item => !list.includes(item) }
+function dedup (list) {
+  const dedupedList = []
+  list.forEach(item => {
+    if (notInList(dedupedList)(item)) {
+      dedupedList.push(item)
+    }
+  })
+  return dedupedList
+}
 // business logic
 function addNodesToListAndObj (nodes) {
   nodes.forEach(node => nodesList.push(node))
@@ -87,7 +96,7 @@ function inRange (targetNode, time, node = targetNode, nodes = [], edges = []) {
   // recurse into unique neighbors with new time and nodes
   nodeTimes
   .forEach(nodeTime => inRange(targetNode, time - nodeTime.time, nodeTime.node, nodes, edges))
-  return [nodes, edges]
+  return [dedup(nodes), dedup(edges)]
 }
 function countContainers (nodes) {
   return nodes.reduce((sum, node) => sum + node.number_of_containers_at_location, 0)
@@ -125,6 +134,7 @@ function getTimeInput () {
   return Number(document.getElementById("timeInput").value)
 }
 function displayMessage (html) { document.getElementById("messageArea").innerHTML = html }
+function listCityAndContainer (node) { return `<li>${node.city_name}: ${node.number_of_containers_at_location}</li>` }
 function nodeClickHandler (targetNode) {
   return () => {
     selectedNode = targetNode
@@ -132,7 +142,8 @@ function nodeClickHandler (targetNode) {
     const [nodes, edges] = inRange(targetNode, time)
     const city = targetNode.city_name
     const containerCount = countContainers(nodes)
-    displayMessage(`Total containers that can reach <b>${city}</b> within ${time} hours is <b>${containerCount}</b>`)
+    const citiesAsListItems = `<ul>${nodes.map(listCityAndContainer).reduce((result, str) => result + str, "")}</ul>`
+    displayMessage(`Total containers that can reach <b>${city}</b> within ${time} hours is <b>${containerCount}</b>${citiesAsListItems}`)
     clearDisplay()
     displayEdges(edges, red, activeEdgeOpacity)
     displayNodes(nodes, "red")

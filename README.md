@@ -1,20 +1,14 @@
-todos:
-- [√] visualize graph of cities on web page as a map (Task 1)
-- [√] calculate cities that can supply containers in time
-- [√] enhancement: 3D map
-- [ ] bug: too many containers for Chamberlain 15 hrs (440 vs 200)
-- [ ] remove edges from 3D map
-- [ ] remove clearmetal notice and todos
-
-NOTES:
-- There is a \r after the first line of nodes.csv.
-- Clearing and redrawing all the nodes and edges. Would be much more efficient to keep track of the current active ones, then only change those and the new active ones.
+# NOTES:
+- to run: `$ npm install && npm start` # (should open 0.0.0.0:8080/dist and display maps)
+- There is a `\r` after the first line of nodes.csv.
+- Noticed that my maps show routes that the example does not (for example Champlain 15hrs has a route from Evanston to Bismark to Champlaign in 14.15 hrs). Perhaps the example is showing only the fastest routes?
+- Currently clearing and redrawing all the nodes and edges. Would be much more efficient to keep track of the current active ones, then only change those and the new active ones.
 - Minuglified mapbox.js complains if lib/images/icons etc isn't present—ideally would fix that path upstream.
 - Using webpack/redux build tools because I thought I'd use react for this, but it was unnecessary.
+- Main calculation function `inRange` could gain significant performance by using Maps to avoid having to dedup.
+- 3D globe API does not have a way to remove polygons or to clear everything, which is why the red lines persist. Given more time, could dig into the underlying libs to fix this.
 
-Thanks for your interest in ClearMetal! When you’ve finished, submit your code as a zip file to recruiting@clearmetal.com.  We will contact you shortly after.
-
-# CHALLENGE SUMMARY
+# SUMMARY
 You’re an equipment manager at a shipping carrier, and one of your main functions is ensuring that every location has sufficient containers available. However, things often go wrong, and you need to be able to quickly replenish inventory from nearby cities.  Since you want to be efficient, you’ve decided to build a tool to help you determine which cities would be close enough to supply containers to the location in need.  To make things clear, we’ve broken down the challenge into two primary tasks.
 
 (you can find an example implementation at http://full-stack-coding-challenge-example.s3-website-us-west-2.amazonaws.com)
@@ -70,6 +64,4 @@ You can make any changes you want to these files and this directory structure.  
 # IMPORTANT NOTES
 1. You can code this up in any language you want.
 2. You can use any frameworks/libraries you want.  For instance, you don’t have to code an algorithm from scratch (like Dijkstras), you can just use an implementation from online.
-3. This is an open challenge.  You can focus on the visual aspect, you can choose to build out further functionality, etc…
-
-Good luck!
+3. You can focus on the visual aspect, you can choose to build out further functionality, etc…
