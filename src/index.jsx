@@ -1,17 +1,19 @@
+// imports
 import {compose} from "redux"
 import axios from "axios"
 import MapBoxMap from "./mapFunctions"
-import {createEarths, addMarker} from "./webglearth"
-
-const mapBoxMap = new MapBoxMap("map")
-const [earth1, earth2] = createEarths()
+import * as earths from "./webglearth"
+// constants
+const [grey, red] = ["#808080", "#FF0000"]
+const edgeOpacity = 0.1
+const activeEdgeOpacity = 0.5
 const nodesList = []
 const nodesObj = {}
 const edgesList = []
-
-// helpers
+const earthsMarkersList = []
+const earthsEdgesList = []
+// pure helpers
 function fst (list) { return list[0] }
-function loadLocalCSV (relativeFilePath) { return axios.get(relativeFilePath) }
 function mergeObjs (objList) {
   return Object.assign.apply(0, objList)
 }
@@ -30,12 +32,7 @@ function csvToJson (csv) {
 }
 function pushTo (list) { return item => { list.push(item); return item } }
 function notInList (list) { return item => !list.includes(item) }
-
 // business logic
-function addNodesToMap (nodes, color = "default") {
-  nodes.forEach(node => mapBoxMap.addMarkerToMap(node, color, nodeClickHandler))
-  return nodes
-}
 function addNodesToListAndObj (nodes) {
   nodes.forEach(node => nodesList.push(node))
   nodes.reduce((obj, node) => Object.assign(obj, {[node.id]: node}), nodesObj)
@@ -44,23 +41,6 @@ function addNodesToListAndObj (nodes) {
 function addEdgesToList (edges) {
   edges.forEach(edge => edgesList.push(edge))
   return edges
-}
-function addEdgesToMap (edges, color = "grey") {
-  edges.forEach(edge => {
-    const node1 = nodesObj[edge.first_node_id]
-    const node2 = nodesObj[edge.second_node_id]
-    mapBoxMap.addEdgeToMap(node1, node2, color)
-  })
-  return edges
-}
-function clearMap () {
-  mapBoxMap.clearMarkers()
-  mapBoxMap.clearEdges()
-  addNodesToMap(nodesList)
-  addEdgesToMap(edgesList)
-}
-function countContainers (nodes) {
-  return nodes.reduce((sum, node) => sum + node.number_of_containers_at_location, 0)
 }
 function shortestDistanceFirst (edge1, edge2) {
   return edge1.travel_time_in_hours_between_nodes - edge2.travel_time_in_hours_between_nodes
@@ -99,21 +79,56 @@ function inRange (targetNode, time, node = targetNode, nodes = [], edges = []) {
   .forEach(nodeTime => inRange(targetNode, time - nodeTime.time, nodeTime.node, nodes, edges))
   return [nodes, edges]
 }
-function nodeClickHandler (event) {
-  function hasLatLng (node) { return node.latitude === event.latlng.lat && node.longitude === event.latlng.lng }
-  const targetNode = fst(nodesList.filter(hasLatLng))
-  const time = 10
-  const [nodes, edges] = inRange(targetNode, time)
-  // console.log('node', targetNode, 'time', time)
-  // console.log('inRange nodes', nodes.map(prop("city_name")))
-  // console.log('inRange edges', edges)
-  // console.log('countContainers', countContainers(nodes))
-  clearMap()
-  addNodesToMap([targetNode], "green")
-  addNodesToMap(nodes, "red")
-  addEdgesToMap(edges, "red")
+function countContainers (nodes) {
+  return nodes.reduce((sum, node) => sum + node.number_of_containers_at_location, 0)
 }
-// load CSVs
-const nodesPromise = loadLocalCSV("../data/nodes.csv").then(compose(addNodesToListAndObj, addNodesToMap, csvToJson, prop("data")))
+// display helpers
+function displayNodes (nodes, color) {
+  nodes.forEach(node => mapBoxMap.addMarker(node.latitude, node.longitude, color || "default", nodeClickHandler(node))) // eslint-disable-line no-use-before-define
+  nodes.forEach(node => {
+    const [m1, m2] = earths.addMarker(node.latitude, node.longitude, color || "blue", nodeClickHandler(node)) // eslint-disable-line no-use-before-define
+    earthsMarkersList.push(m1)
+    earthsMarkersList.push(m2)
+  })
+  return nodes
+}
+function displayEdges (edges, color = grey, opacity = edgeOpacity) {
+  edges.forEach(edge => {
+    const node1 = nodesObj[edge.first_node_id]
+    const node2 = nodesObj[edge.second_node_id]
+    mapBoxMap.addEdge(node1.latitude, node1.longitude, node2.latitude, node2.longitude, color, opacity) // eslint-disable-line no-use-before-define
+    const [e1, e2] = earths.addEdge(node1.latitude, node1.longitude, node2.latitude, node2.longitude, color, opacity)
+    earthsEdgesList.push(e1)
+    earthsEdgesList.push(e2)
+  })
+  return edges
+}
+function clearDisplay () {
+  mapBoxMap.clearMarkers() // eslint-disable-line no-use-before-define
+  mapBoxMap.clearEdges() // eslint-disable-line no-use-before-define
+  earths.clearMarkers(earthsMarkersList)
+  earths.clearEdges(earthsEdgesList)
+  displayNodes(nodesList)
+  displayEdges(edgesList)
+}
+function nodeClickHandler (targetNode) {
+  return () => {
+    const time = 10
+    const [nodes, edges] = inRange(targetNode, time)
+    // console.log('node', targetNode, 'time', time)
+    // console.log('inRange nodes', nodes.map(prop("city_name")))
+    // console.log('inRange edges', edges)
+    // console.log('countContainers', countContainers(nodes))
+    clearDisplay()
+    displayEdges(edges, red, activeEdgeOpacity)
+    displayNodes(nodes, "red")
+    displayNodes([targetNode], "green")
+  }
+}
+// loading CSVs and displays
+function loadLocalCSV (relativeFilePath) { return axios.get(relativeFilePath) }
+const mapBoxMap = new MapBoxMap("map")
+earths.create()
+const nodesPromise = loadLocalCSV("../data/nodes.csv").then(compose(addNodesToListAndObj, displayNodes, csvToJson, prop("data")))
 const edgesPromise = loadLocalCSV("../data/edges.csv").then(compose(csvToJson, prop("data")))
-axios.all([edgesPromise, nodesPromise]).then(compose(createGraph, addEdgesToMap, addEdgesToList, fst))
+axios.all([edgesPromise, nodesPromise]).then(compose(createGraph, displayEdges, addEdgesToList, fst))

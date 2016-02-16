@@ -54,7 +54,7 @@
 /******/ 	
 /******/ 	
 /******/ 	var hotApplyOnUpdate = true;
-/******/ 	var hotCurrentHash = "f9360fab18d8669329b3"; // eslint-disable-line no-unused-vars
+/******/ 	var hotCurrentHash = "e2da188eac3be04db8e9"; // eslint-disable-line no-unused-vars
 /******/ 	var hotCurrentModuleData = {};
 /******/ 	var hotCurrentParents = []; // eslint-disable-line no-unused-vars
 /******/ 	
@@ -8047,35 +8047,35 @@
 
 	var _axios2 = _interopRequireDefault(_axios);
 
-	var _mapFunctions = __webpack_require__(275);
+	var _mapFunctions = __webpack_require__(270);
 
 	var _mapFunctions2 = _interopRequireDefault(_mapFunctions);
 
 	var _webglearth = __webpack_require__(274);
 
+	var earths = _interopRequireWildcard(_webglearth);
+
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-	function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+	function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; } // imports
 
-	var mapBoxMap = new _mapFunctions2.default("map");
 
-	var _createEarths = (0, _webglearth.createEarths)();
+	// constants
+	var grey = "#808080";
+	var red = "#FF0000";
 
-	var _createEarths2 = _slicedToArray(_createEarths, 2);
-
-	var earth1 = _createEarths2[0];
-	var earth2 = _createEarths2[1];
-
+	var edgeOpacity = 0.1;
+	var activeEdgeOpacity = 0.5;
 	var nodesList = [];
 	var nodesObj = {};
 	var edgesList = [];
-
-	// helpers
+	var earthsMarkersList = [];
+	var earthsEdgesList = [];
+	// pure helpers
 	function fst(list) {
 	  return list[0];
-	}
-	function loadLocalCSV(relativeFilePath) {
-	  return _axios2.default.get(relativeFilePath);
 	}
 	function mergeObjs(objList) {
 	  return Object.assign.apply(0, objList);
@@ -8110,16 +8110,7 @@
 	    return !list.includes(item);
 	  };
 	}
-
 	// business logic
-	function addNodesToMap(nodes) {
-	  var color = arguments.length <= 1 || arguments[1] === undefined ? "default" : arguments[1];
-
-	  nodes.forEach(function (node) {
-	    return mapBoxMap.addMarkerToMap(node, color, nodeClickHandler);
-	  });
-	  return nodes;
-	}
 	function addNodesToListAndObj(nodes) {
 	  nodes.forEach(function (node) {
 	    return nodesList.push(node);
@@ -8134,27 +8125,6 @@
 	    return edgesList.push(edge);
 	  });
 	  return edges;
-	}
-	function addEdgesToMap(edges) {
-	  var color = arguments.length <= 1 || arguments[1] === undefined ? "grey" : arguments[1];
-
-	  edges.forEach(function (edge) {
-	    var node1 = nodesObj[edge.first_node_id];
-	    var node2 = nodesObj[edge.second_node_id];
-	    mapBoxMap.addEdgeToMap(node1, node2, color);
-	  });
-	  return edges;
-	}
-	function clearMap() {
-	  mapBoxMap.clearMarkers();
-	  mapBoxMap.clearEdges();
-	  addNodesToMap(nodesList);
-	  addEdgesToMap(edgesList);
-	}
-	function countContainers(nodes) {
-	  return nodes.reduce(function (sum, node) {
-	    return sum + node.number_of_containers_at_location;
-	  }, 0);
 	}
 	function shortestDistanceFirst(edge1, edge2) {
 	  return edge1.travel_time_in_hours_between_nodes - edge2.travel_time_in_hours_between_nodes;
@@ -8196,33 +8166,88 @@
 	  });
 	  return [nodes, edges];
 	}
-	function nodeClickHandler(event) {
-	  function hasLatLng(node) {
-	    return node.latitude === event.latlng.lat && node.longitude === event.latlng.lng;
-	  }
-	  var targetNode = fst(nodesList.filter(hasLatLng));
-	  var time = 10;
-
-	  var _inRange = inRange(targetNode, time);
-
-	  var _inRange2 = _slicedToArray(_inRange, 2);
-
-	  var nodes = _inRange2[0];
-	  var edges = _inRange2[1];
-	  // console.log('node', targetNode, 'time', time)
-	  // console.log('inRange nodes', nodes.map(prop("city_name")))
-	  // console.log('inRange edges', edges)
-	  // console.log('countContainers', countContainers(nodes))
-
-	  clearMap();
-	  addNodesToMap([targetNode], "green");
-	  addNodesToMap(nodes, "red");
-	  addEdgesToMap(edges, "red");
+	function countContainers(nodes) {
+	  return nodes.reduce(function (sum, node) {
+	    return sum + node.number_of_containers_at_location;
+	  }, 0);
 	}
-	// load CSVs
-	var nodesPromise = loadLocalCSV("../data/nodes.csv").then((0, _redux.compose)(addNodesToListAndObj, addNodesToMap, csvToJson, prop("data")));
+	// display helpers
+	function displayNodes(nodes, color) {
+	  nodes.forEach(function (node) {
+	    return mapBoxMap.addMarker(node.latitude, node.longitude, color || "default", nodeClickHandler(node));
+	  }); // eslint-disable-line no-use-before-define
+	  nodes.forEach(function (node) {
+	    var _earths$addMarker = earths.addMarker(node.latitude, node.longitude, color || "blue", nodeClickHandler(node));
+
+	    var _earths$addMarker2 = _slicedToArray(_earths$addMarker, 2);
+
+	    var m1 = _earths$addMarker2[0];
+	    var m2 = _earths$addMarker2[1]; // eslint-disable-line no-use-before-define
+
+	    earthsMarkersList.push(m1);
+	    earthsMarkersList.push(m2);
+	  });
+	  return nodes;
+	}
+	function displayEdges(edges) {
+	  var color = arguments.length <= 1 || arguments[1] === undefined ? grey : arguments[1];
+	  var opacity = arguments.length <= 2 || arguments[2] === undefined ? edgeOpacity : arguments[2];
+
+	  edges.forEach(function (edge) {
+	    var node1 = nodesObj[edge.first_node_id];
+	    var node2 = nodesObj[edge.second_node_id];
+	    mapBoxMap.addEdge(node1.latitude, node1.longitude, node2.latitude, node2.longitude, color, opacity); // eslint-disable-line no-use-before-define
+
+	    var _earths$addEdge = earths.addEdge(node1.latitude, node1.longitude, node2.latitude, node2.longitude, color, opacity);
+
+	    var _earths$addEdge2 = _slicedToArray(_earths$addEdge, 2);
+
+	    var e1 = _earths$addEdge2[0];
+	    var e2 = _earths$addEdge2[1];
+
+	    earthsEdgesList.push(e1);
+	    earthsEdgesList.push(e2);
+	  });
+	  return edges;
+	}
+	function clearDisplay() {
+	  mapBoxMap.clearMarkers(); // eslint-disable-line no-use-before-define
+	  mapBoxMap.clearEdges(); // eslint-disable-line no-use-before-define
+	  earths.clearMarkers(earthsMarkersList);
+	  earths.clearEdges(earthsEdgesList);
+	  displayNodes(nodesList);
+	  displayEdges(edgesList);
+	}
+	function nodeClickHandler(targetNode) {
+	  return function () {
+	    var time = 10;
+
+	    var _inRange = inRange(targetNode, time);
+
+	    var _inRange2 = _slicedToArray(_inRange, 2);
+
+	    var nodes = _inRange2[0];
+	    var edges = _inRange2[1];
+	    // console.log('node', targetNode, 'time', time)
+	    // console.log('inRange nodes', nodes.map(prop("city_name")))
+	    // console.log('inRange edges', edges)
+	    // console.log('countContainers', countContainers(nodes))
+
+	    clearDisplay();
+	    displayEdges(edges, red, activeEdgeOpacity);
+	    displayNodes(nodes, "red");
+	    displayNodes([targetNode], "green");
+	  };
+	}
+	// loading CSVs and displays
+	function loadLocalCSV(relativeFilePath) {
+	  return _axios2.default.get(relativeFilePath);
+	}
+	var mapBoxMap = new _mapFunctions2.default("map");
+	earths.create();
+	var nodesPromise = loadLocalCSV("../data/nodes.csv").then((0, _redux.compose)(addNodesToListAndObj, displayNodes, csvToJson, prop("data")));
 	var edgesPromise = loadLocalCSV("../data/edges.csv").then((0, _redux.compose)(csvToJson, prop("data")));
-	_axios2.default.all([edgesPromise, nodesPromise]).then((0, _redux.compose)(createGraph, addEdgesToMap, addEdgesToList, fst));
+	_axios2.default.all([edgesPromise, nodesPromise]).then((0, _redux.compose)(createGraph, displayEdges, addEdgesToList, fst));
 
 	/* REACT HOT LOADER */ }).call(this); } finally { if (true) { (function () { var foundReactClasses = module.hot.data && module.hot.data.foundReactClasses || false; if (module.exports && module.makeHot) { var makeExportsHot = __webpack_require__(271); if (makeExportsHot(module, __webpack_require__(139))) { foundReactClasses = true; } var shouldAcceptModule = true && foundReactClasses; if (shouldAcceptModule) { module.hot.accept(function (err) { if (err) { console.error("Cannot not apply hot update to " + "index.jsx" + ": " + err.message); } }); } } module.hot.dispose(function (data) { data.makeHot = module.makeHot; data.foundReactClasses = foundReactClasses; }); })(); } }
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(4)(module)))
@@ -29949,7 +29974,195 @@
 
 
 /***/ },
-/* 270 */,
+/* 270 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(module) {/* REACT HOT LOADER */ if (true) { (function () { var ReactHotAPI = __webpack_require__(77), RootInstanceProvider = __webpack_require__(85), ReactMount = __webpack_require__(87), React = __webpack_require__(139); module.makeHot = module.hot.data ? module.hot.data.makeHot : ReactHotAPI(function () { return RootInstanceProvider.getRootInstances(ReactMount); }, React); })(); } try { (function () {
+
+	"use strict";
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var L = window.L;
+
+	var Map = function () {
+	  /*
+	   *  Initiates the map.
+	   *  When you initiate a Map, it renders a leaflet map inside divID.  Example usage: var map = new Map('mydivid');
+	   *  Important Note: please make sure to set the height of your div, otherwise the leaflet map will not display.
+	   *  @param {string} divID
+	   */
+
+	  function Map(divID) {
+	    _classCallCheck(this, Map);
+
+	    this.map = this.createMap(divID);
+	    this.markerLayer = this.addMarkerLayerToMap(this.map);
+	    this.polylineLayer = this.addPolylineLayerToMap(this.map);
+	  }
+
+	  /*
+	   *  Adds a node to the map.
+	   *  @param: {Object} node
+	   *  @param: {float} node.latitude
+	   *  @param: {float} node.longitude
+	   *
+	   *  @param: {String} color - Either "green", "red", or "default"
+	   *  @param: {requestCallback} callbackFunction - This is called when the marker is clicked on.
+	   */
+
+
+	  _createClass(Map, [{
+	    key: "addMarker",
+	    value: function addMarker(latitude, longitude, color, callbackFunction) {
+	      var icon = undefined;
+
+	      if (color === "green") {
+	        icon = this.getGreenIcon();
+	      } else if (color === "red") {
+	        icon = this.getRedIcon();
+	      } else if (color === "default") {
+	        icon = null;
+	      }
+
+	      if (icon) {
+	        L.marker([latitude, longitude], { icon: icon }).addTo(this.markerLayer).on("click", callbackFunction);
+	      } else {
+	        L.marker([latitude, longitude]).addTo(this.markerLayer).on("click", callbackFunction);
+	      }
+	    }
+
+	    /*
+	     *  Adds an edge to the map.
+	     *  @param: {Object} node1
+	     *  @param: {float} node1.latitude
+	     *  @param: {float} node1.longitude
+	     *
+	     *  @param: {Object} node2
+	     *  @param: {float} node2.latitude
+	     *  @param: {float} node2.longitude
+	     *
+	     *  @param: {String} color - "red", "grey", "black", etc.
+	     */
+
+	  }, {
+	    key: "addEdge",
+	    value: function addEdge(lat1, lon1, lat2, lon2, color, opacity) {
+	      var latlngs = [];
+	      latlngs.push(L.latLng(lat1, lon1));
+	      latlngs.push(L.latLng(lat2, lon2));
+	      var polyline = L.polyline(latlngs, { color: color, opacity: opacity });
+	      this.polylineLayer.addLayer(polyline);
+	    }
+
+	    /*
+	    * Clears all markers on the map
+	    */
+
+	  }, {
+	    key: "clearMarkers",
+	    value: function clearMarkers() {
+	      this.markerLayer.clearLayers();
+	    }
+
+	    /*
+	    * Clears all edges on the map
+	    */
+
+	  }, {
+	    key: "clearEdges",
+	    value: function clearEdges() {
+	      this.polylineLayer.clearLayers();
+	    }
+
+	    // PRIVATE METHODS, DON'T NEED TO USE THESE
+
+	    /*
+	    * Renders a map inside divID
+	    * @param {string} divID
+	    */
+
+	  }, {
+	    key: "createMap",
+	    value: function createMap(divID) {
+	      var publicAccessToken = "pk.eyJ1IjoiZGllZ29jMSIsImEiOiJjaWoxbnZyNG0wMGMxdWFsemVmdHE1M3o0In0.31tbvIxDPX8z2rO368-E0Q";
+	      L.mapbox.accessToken = publicAccessToken;
+	      var map = L.mapbox.map(divID, "mapbox.streets", {
+	        maxZoom: 4,
+	        minZoom: 4
+	      }).setView([43, -99], 3); // eslint-disable-line no-magic-numbers
+	      map.dragging.disable();
+	      return map;
+	    }
+
+	    /*
+	    * Adds a layer for markers to map
+	    * @param {Leaflet Map} map
+	    */
+
+	  }, {
+	    key: "addMarkerLayerToMap",
+	    value: function addMarkerLayerToMap(map) {
+	      return new L.LayerGroup().addTo(map);
+	    }
+
+	    /*
+	    * Adds a layer for edges to map
+	    * @param {Leaflet Map} map
+	    */
+
+	  }, {
+	    key: "addPolylineLayerToMap",
+	    value: function addPolylineLayerToMap(map) {
+	      return new L.LayerGroup().addTo(map);
+	    }
+
+	    /*
+	    * Returns a red leaflet icon
+	    */
+
+	  }, {
+	    key: "getRedIcon",
+	    value: function getRedIcon() {
+	      var RedIcon = L.Icon.Default.extend({
+	        options: {
+	          iconUrl: "imgs/red-icon.png"
+	        }
+	      });
+	      return new RedIcon();
+	    }
+
+	    /*
+	    * Returns a green leaflet icon
+	    */
+
+	  }, {
+	    key: "getGreenIcon",
+	    value: function getGreenIcon() {
+	      var GreenIcon = L.Icon.Default.extend({
+	        options: {
+	          iconUrl: "imgs/green-icon.png"
+	        }
+	      });
+	      return new GreenIcon();
+	    }
+	  }]);
+
+	  return Map;
+	}();
+
+	exports.default = Map;
+
+	/* REACT HOT LOADER */ }).call(this); } finally { if (true) { (function () { var foundReactClasses = module.hot.data && module.hot.data.foundReactClasses || false; if (module.exports && module.makeHot) { var makeExportsHot = __webpack_require__(271); if (makeExportsHot(module, __webpack_require__(139))) { foundReactClasses = true; } var shouldAcceptModule = true && foundReactClasses; if (shouldAcceptModule) { module.hot.accept(function (err) { if (err) { console.error("Cannot not apply hot update to " + "mapFunctions.js" + ": " + err.message); } }); } } module.hot.dispose(function (data) { data.makeHot = module.makeHot; data.foundReactClasses = foundReactClasses; }); })(); } }
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(4)(module)))
+
+/***/ },
 /* 271 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -30087,11 +30300,15 @@
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
-	exports.createEarths = createEarths;
+	exports.create = create;
 	exports.addMarker = addMarker;
+	exports.addEdge = addEdge;
+	exports.clearMarkers = clearMarkers;
+	exports.clearEdges = clearEdges;
 	var WebGLEarth = window.WebGLEarth;
 	var WE = window.WE;
 	var msBetweenUpdate = 50;
+	var proxyHost = "http://data.webglearth.com/cgi-bin/corsproxy.fcgi";
 
 	var earth1 = undefined;
 	var earth2 = undefined;
@@ -30124,237 +30341,51 @@
 	  return "./imgs/" + color + "-icon.png";
 	}
 
-	function createEarths() {
-	  var proxyHost = "http://data.webglearth.com/cgi-bin/corsproxy.fcgi";
+	function create() {
 	  earth1 = new WebGLEarth("earth1", { proxyHost: proxyHost, center: center });
 	  earth2 = new WebGLEarth("earth2", { proxyHost: proxyHost, center: antipode(center) });
 	  earth1.setZoom(zoom);
 	  earth2.setZoom(zoom);
-
-	  var marker = WE.marker([51.5, -0.09], markerPath("blue")).addTo(earth1); // eslint-disable-line no-magic-numbers
-	  marker.bindPopup("<b>Hello world!</b><br>I am a popup.<br /><span style='font-size:10pxcolor:#999'>Tip: Another popup is hidden in Cairo..</span>", { maxWidth: 150, closeButton: true }).openPopup();
-
-	  var marker2 = WE.marker([30.058056, 31.228889], markerPath("green")).addTo(earth2); // eslint-disable-line no-magic-numbers
-	  marker2.bindPopup("<b>Cairo</b><br>Yay, you found me!", { maxWidth: 120, closeButton: false });
-
-	  var markerCustom = WE.marker([50, -9], markerPath("red")); // eslint-disable-line no-magic-numbers
-	  markerCustom.addTo(earth1);
-
 	  // Recalculate positions whenever any of the two globes moves
 	  setInterval(update, msBetweenUpdate);
 	  return [earth1, earth2];
 	}
 
-	function generateMarkerClickHandler(_lat, _lng, _id) {
-	  return function () {
-	    var lat = _lat;
-	    var lng = _lng;
-	    var nodeId = _id;
-	    debugger;
-	  };
-	}
-
-	function addMarker(lat, lng, color, id) {
-	  var marker1 = WE.marker([lat, lng], markerPath(color));
+	function addMarker(latitude, longitude, color, clickHandler) {
+	  var marker1 = WE.marker([latitude, longitude], markerPath(color));
+	  var marker2 = WE.marker([latitude, longitude], markerPath(color));
 	  marker1.addTo(earth1);
-	  marker1.element.onclick = generateMarkerClickHandler(lat, lng, id);
-	  var marker2 = WE.marker([lat, lng], markerPath(color));
 	  marker2.addTo(earth2);
-	  marker2.element.onclick = generateMarkerClickHandler(lat, lng, id);
+	  marker1.element.onclick = clickHandler;
+	  marker2.element.onclick = clickHandler;
 	  return [marker1, marker2];
 	}
 
-	/* REACT HOT LOADER */ }).call(this); } finally { if (true) { (function () { var foundReactClasses = module.hot.data && module.hot.data.foundReactClasses || false; if (module.exports && module.makeHot) { var makeExportsHot = __webpack_require__(271); if (makeExportsHot(module, __webpack_require__(139))) { foundReactClasses = true; } var shouldAcceptModule = true && foundReactClasses; if (shouldAcceptModule) { module.hot.accept(function (err) { if (err) { console.error("Cannot not apply hot update to " + "webglearth.js" + ": " + err.message); } }); } } module.hot.dispose(function (data) { data.makeHot = module.makeHot; data.foundReactClasses = foundReactClasses; }); })(); } }
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(4)(module)))
+	function addEdge(lat1, lon1, lat2, lon2, color, opacity) {
+	  var edge1 = WE.polygon([[lat1, lon1], [lat2, lon2], [lat1, lon1]], { color: color, opacity: opacity });
+	  var edge2 = WE.polygon([[lat1, lon1], [lat2, lon2], [lat1, lon1]], { color: color, opacity: opacity });
+	  edge1.addTo(earth1);
+	  edge2.addTo(earth2);
+	  return [edge1, edge2];
+	}
 
-/***/ },
-/* 275 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/* WEBPACK VAR INJECTION */(function(module) {/* REACT HOT LOADER */ if (true) { (function () { var ReactHotAPI = __webpack_require__(77), RootInstanceProvider = __webpack_require__(85), ReactMount = __webpack_require__(87), React = __webpack_require__(139); module.makeHot = module.hot.data ? module.hot.data.makeHot : ReactHotAPI(function () { return RootInstanceProvider.getRootInstances(ReactMount); }, React); })(); } try { (function () {
-
-	"use strict";
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	var L = window.L;
-
-	var Map = function () {
-	  /*
-	   *  Initiates the map.
-	   *  When you initiate a Map, it renders a leaflet map inside divID.  Example usage: var map = new Map('mydivid');
-	   *  Important Note: please make sure to set the height of your div, otherwise the leaflet map will not display.
-	   *  @param {string} divID
-	   */
-
-	  function Map(divID) {
-	    _classCallCheck(this, Map);
-
-	    this.map = this.createMap(divID);
-	    this.markerLayer = this.addMarkerLayerToMap(this.map);
-	    this.polylineLayer = this.addPolylineLayerToMap(this.map);
+	function clearMarkers(markers) {
+	  while (markers.length) {
+	    var marker = markers.pop(); // need to clear out markers so it can be refilled
+	    earth1.removeMarker(marker);
+	    earth2.removeMarker(marker); // would be nice to know which one marker is part of
 	  }
+	}
 
-	  /*
-	   *  Adds a node to the map.
-	   *  @param: {Object} node
-	   *  @param: {float} node.latitude
-	   *  @param: {float} node.longitude
-	   *
-	   *  @param: {String} color - Either "green", "red", or "default"
-	   *  @param: {requestCallback} callbackFunction - This is called when the marker is clicked on.
-	   */
+	function clearEdges(edges) {
+	  while (edges.length) {
+	    var edge = edges.pop(); // need to clear out edges so it can be refilled
+	    earth1.removeMarker(edge);
+	    earth2.removeMarker(edge); // would be nice to know which one marker is part of
+	  }
+	}
 
-
-	  _createClass(Map, [{
-	    key: "addMarkerToMap",
-	    value: function addMarkerToMap(node, color, callbackFunction) {
-	      var icon = undefined;
-
-	      if (color === "green") {
-	        icon = this.getGreenIcon();
-	      } else if (color === "red") {
-	        icon = this.getRedIcon();
-	      } else if (color === "default") {
-	        icon = null;
-	      }
-
-	      if (icon) {
-	        L.marker([node.latitude, node.longitude], { icon: icon }).addTo(this.markerLayer).on("click", callbackFunction);
-	      } else {
-	        L.marker([node.latitude, node.longitude]).addTo(this.markerLayer).on("click", callbackFunction);
-	      }
-	    }
-
-	    /*
-	     *  Adds an edge to the map.
-	     *  @param: {Object} node1
-	     *  @param: {float} node1.latitude
-	     *  @param: {float} node1.longitude
-	     *
-	     *  @param: {Object} node2
-	     *  @param: {float} node2.latitude
-	     *  @param: {float} node2.longitude
-	     *
-	     *  @param: {String} color - "red", "grey", "black", etc.
-	     */
-
-	  }, {
-	    key: "addEdgeToMap",
-	    value: function addEdgeToMap(node1, node2, color) {
-	      var latlngs = [];
-	      var opacity = 0.4;
-	      latlngs.push(L.latLng(node1.latitude, node1.longitude));
-	      latlngs.push(L.latLng(node2.latitude, node2.longitude));
-	      var polyline = L.polyline(latlngs, { color: color, opacity: opacity });
-	      this.polylineLayer.addLayer(polyline);
-	    }
-
-	    /*
-	    * Clears all markers on the map
-	    */
-
-	  }, {
-	    key: "clearMarkers",
-	    value: function clearMarkers() {
-	      this.markerLayer.clearLayers();
-	    }
-
-	    /*
-	    * Clears all edges on the map
-	    */
-
-	  }, {
-	    key: "clearEdges",
-	    value: function clearEdges() {
-	      this.polylineLayer.clearLayers();
-	    }
-
-	    // PRIVATE METHODS, DON'T NEED TO USE THESE
-
-	    /*
-	    * Renders a map inside divID
-	    * @param {string} divID
-	    */
-
-	  }, {
-	    key: "createMap",
-	    value: function createMap(divID) {
-	      var publicAccessToken = "pk.eyJ1IjoiZGllZ29jMSIsImEiOiJjaWoxbnZyNG0wMGMxdWFsemVmdHE1M3o0In0.31tbvIxDPX8z2rO368-E0Q";
-	      L.mapbox.accessToken = publicAccessToken;
-	      var map = L.mapbox.map(divID, "mapbox.streets", {
-	        maxZoom: 4,
-	        minZoom: 4
-	      }).setView([43, -99], 3); // eslint-disable-line no-magic-numbers
-	      map.dragging.disable();
-	      return map;
-	    }
-
-	    /*
-	    * Adds a layer for markers to map
-	    * @param {Leaflet Map} map
-	    */
-
-	  }, {
-	    key: "addMarkerLayerToMap",
-	    value: function addMarkerLayerToMap(map) {
-	      return new L.LayerGroup().addTo(map);
-	    }
-
-	    /*
-	    * Adds a layer for edges to map
-	    * @param {Leaflet Map} map
-	    */
-
-	  }, {
-	    key: "addPolylineLayerToMap",
-	    value: function addPolylineLayerToMap(map) {
-	      return new L.LayerGroup().addTo(map);
-	    }
-
-	    /*
-	    * Returns a red leaflet icon
-	    */
-
-	  }, {
-	    key: "getRedIcon",
-	    value: function getRedIcon() {
-	      var RedIcon = L.Icon.Default.extend({
-	        options: {
-	          iconUrl: "imgs/red-icon.png"
-	        }
-	      });
-	      return new RedIcon();
-	    }
-
-	    /*
-	    * Returns a green leaflet icon
-	    */
-
-	  }, {
-	    key: "getGreenIcon",
-	    value: function getGreenIcon() {
-	      var GreenIcon = L.Icon.Default.extend({
-	        options: {
-	          iconUrl: "imgs/green-icon.png"
-	        }
-	      });
-	      return new GreenIcon();
-	    }
-	  }]);
-
-	  return Map;
-	}();
-
-	exports.default = Map;
-
-	/* REACT HOT LOADER */ }).call(this); } finally { if (true) { (function () { var foundReactClasses = module.hot.data && module.hot.data.foundReactClasses || false; if (module.exports && module.makeHot) { var makeExportsHot = __webpack_require__(271); if (makeExportsHot(module, __webpack_require__(139))) { foundReactClasses = true; } var shouldAcceptModule = true && foundReactClasses; if (shouldAcceptModule) { module.hot.accept(function (err) { if (err) { console.error("Cannot not apply hot update to " + "mapFunctions.js" + ": " + err.message); } }); } } module.hot.dispose(function (data) { data.makeHot = module.makeHot; data.foundReactClasses = foundReactClasses; }); })(); } }
+	/* REACT HOT LOADER */ }).call(this); } finally { if (true) { (function () { var foundReactClasses = module.hot.data && module.hot.data.foundReactClasses || false; if (module.exports && module.makeHot) { var makeExportsHot = __webpack_require__(271); if (makeExportsHot(module, __webpack_require__(139))) { foundReactClasses = true; } var shouldAcceptModule = true && foundReactClasses; if (shouldAcceptModule) { module.hot.accept(function (err) { if (err) { console.error("Cannot not apply hot update to " + "webglearth.js" + ": " + err.message); } }); } } module.hot.dispose(function (data) { data.makeHot = module.makeHot; data.foundReactClasses = foundReactClasses; }); })(); } }
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(4)(module)))
 
 /***/ }

@@ -21,7 +21,7 @@ export default class Map {
    *  @param: {String} color - Either "green", "red", or "default"
    *  @param: {requestCallback} callbackFunction - This is called when the marker is clicked on.
    */
-  addMarkerToMap (node, color, callbackFunction) {
+  addMarker (latitude, longitude, color, callbackFunction) {
     let icon
 
     if (color === "green") {
@@ -33,9 +33,9 @@ export default class Map {
     }
 
     if (icon) {
-      L.marker([node.latitude, node.longitude], {icon}).addTo(this.markerLayer).on("click", callbackFunction)
+      L.marker([latitude, longitude], {icon}).addTo(this.markerLayer).on("click", callbackFunction)
     } else {
-      L.marker([node.latitude, node.longitude]).addTo(this.markerLayer).on("click", callbackFunction)
+      L.marker([latitude, longitude]).addTo(this.markerLayer).on("click", callbackFunction)
     }
   }
 
@@ -51,11 +51,10 @@ export default class Map {
    *
    *  @param: {String} color - "red", "grey", "black", etc.
    */
-  addEdgeToMap (node1, node2, color) {
+  addEdge (lat1, lon1, lat2, lon2, color, opacity) {
     const latlngs = []
-    const opacity = 0.4
-    latlngs.push(L.latLng(node1.latitude, node1.longitude))
-    latlngs.push(L.latLng(node2.latitude, node2.longitude))
+    latlngs.push(L.latLng(lat1, lon1))
+    latlngs.push(L.latLng(lat2, lon2))
     const polyline = L.polyline(latlngs, {color, opacity})
     this.polylineLayer.addLayer(polyline)
   }

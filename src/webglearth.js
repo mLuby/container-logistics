@@ -1,6 +1,7 @@
 const WebGLEarth = window.WebGLEarth
 const WE = window.WE
 const msBetweenUpdate = 50
+const proxyHost = "http://data.webglearth.com/cgi-bin/corsproxy.fcgi"
 
 let earth1
 let earth2
@@ -31,42 +32,46 @@ function update () {
 
 function markerPath (color) { return `./imgs/${color}-icon.png` }
 
-export function createEarths () {
-  const proxyHost = "http://data.webglearth.com/cgi-bin/corsproxy.fcgi"
+export function create () {
   earth1 = new WebGLEarth("earth1", {proxyHost, center})
   earth2 = new WebGLEarth("earth2", {proxyHost, center: antipode(center)})
   earth1.setZoom(zoom)
   earth2.setZoom(zoom)
-
-  const marker = WE.marker([51.5, -0.09], markerPath("blue")).addTo(earth1) // eslint-disable-line no-magic-numbers
-  marker.bindPopup("<b>Hello world!</b><br>I am a popup.<br /><span style='font-size:10pxcolor:#999'>Tip: Another popup is hidden in Cairo..</span>", {maxWidth: 150, closeButton: true}).openPopup()
-
-  const marker2 = WE.marker([30.058056, 31.228889], markerPath("green")).addTo(earth2) // eslint-disable-line no-magic-numbers
-  marker2.bindPopup("<b>Cairo</b><br>Yay, you found me!", {maxWidth: 120, closeButton: false})
-
-  const markerCustom = WE.marker([50, -9], markerPath("red")) // eslint-disable-line no-magic-numbers
-  markerCustom.addTo(earth1)
-
   // Recalculate positions whenever any of the two globes moves
   setInterval(update, msBetweenUpdate)
   return [earth1, earth2]
 }
 
-function generateMarkerClickHandler (_lat, _lng, _id) {
-  return () => {
-    const lat = _lat
-    const lng = _lng
-    const nodeId = _id
-    debugger
+export function addMarker (latitude, longitude, color, clickHandler) {
+  const marker1 = WE.marker([latitude, longitude], markerPath(color))
+  const marker2 = WE.marker([latitude, longitude], markerPath(color))
+  marker1.addTo(earth1)
+  marker2.addTo(earth2)
+  marker1.element.onclick = clickHandler
+  marker2.element.onclick = clickHandler
+  return [marker1, marker2]
+}
+
+export function addEdge (lat1, lon1, lat2, lon2, color, opacity) {
+  const edge1 = WE.polygon([[lat1, lon1], [lat2, lon2], [lat1, lon1]], {color, opacity})
+  const edge2 = WE.polygon([[lat1, lon1], [lat2, lon2], [lat1, lon1]], {color, opacity})
+  edge1.addTo(earth1)
+  edge2.addTo(earth2)
+  return [edge1, edge2]
+}
+
+export function clearMarkers (markers) {
+  while (markers.length) {
+    const marker = markers.pop() // need to clear out markers so it can be refilled
+    earth1.removeMarker(marker)
+    earth2.removeMarker(marker) // would be nice to know which one marker is part of
   }
 }
 
-export function addMarker (lat, lng, color, id) {
-  const marker1 = WE.marker([lat, lng], markerPath(color))
-  marker1.addTo(earth1)
-  marker1.element.onclick = generateMarkerClickHandler(lat, lng, id)
-  const marker2 = WE.marker([lat, lng], markerPath(color))
-  marker2.addTo(earth2)
-  marker2.element.onclick = generateMarkerClickHandler(lat, lng, id)
-  return [marker1, marker2]
+export function clearEdges (edges) {
+  while (edges.length) {
+    const edge = edges.pop() // need to clear out edges so it can be refilled
+    earth1.removeMarker(edge)
+    earth2.removeMarker(edge) // would be nice to know which one marker is part of
+  }
 }
